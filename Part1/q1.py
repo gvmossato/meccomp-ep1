@@ -3,19 +3,24 @@ import numpy as np
 from runge_kutta import RK4
 
 
-Ra = 200
+global Ra, La, Rb, Lb, C, e
+
+Ra = 200.0
 La = 0.01
-Rb = 20
+Rb = 20.0
 Lb = 0.5
 C  = 0.002
-e = lambda t: np.cos(600 * t) / La
+e  = lambda t: np.cos(600 * t) / La
 
-# f1 = lambda t, Y: e(t) - q(t) / C - Ra * (i1 - i2)
-# f2 = lambda t, Y: 6.0*Y[0] - Y[1]
-# f3 = lambda t, y: i1 - i2
+Y0 = [0.0, 0.0, 0.0] # Y = [i1, i2, q]
 
-# F = np.array([f1, f2])
-# Y0 = np.array([3.0, 1.0])
-# x0 = 0.0
+f1 = lambda t, Y: ( e(t) - Y[2]/C - Ra*(Y[0]-Y[1]) ) / La
+f2 = lambda t, Y: ( Y[2]/C + Ra*(Y[0]-Y[1]) - Rb*Y[1] ) / Lb
+f3 = lambda t, Y: Y[0] - Y[1]
 
-# RK4(F, x0, Y0, 0.1, 100)
+F = [f1, f2, f3]
+
+t0 = 0.0
+
+
+print(RK4(F, t0, Y0, h=0.001, tf=0.03))
