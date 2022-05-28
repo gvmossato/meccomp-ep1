@@ -38,7 +38,19 @@ def RK4(F: list, t0: float, Y0: list, h: float, tf: float) -> tuple:
     return (T, np.transpose(Y_hist), np.transpose(K1_hist))
 
 
-def get_scales(Y):
+def get_scales(Y: np.ndarray) -> np.ndarray:
+    """
+    Para uma lista de vetores, ajusta a amplitude de cada um à
+    mediana das amplitudes, através de um fator de escala 10^n
+    (com n inteiro)
+
+    Args:
+        Y (np.ndarray): lista de vetores a terem suas amplitudes ajustadas
+
+    Returns:
+        np.ndarray: escalas que ajustam todos os vetores a um
+                    intervalo próximo ao da amplitude mediana
+    """
     n = len(Y)
 
     scales = np.zeros((n, 1))
@@ -46,10 +58,11 @@ def get_scales(Y):
     median_idx = np.argsort(amplitudes)[n//2]
 
     for i in range(n):
+        # a * 10**x == b => x == np.log10(b/a)
         power = np.log10(amplitudes[median_idx]/amplitudes[i])
-        scales[i, 0] = int(np.round(power))
+        scales[i, 0] = np.round(power)
 
-    return list(10 ** scales)
+    return 10 ** scales
 
 
 def scale_plot(
@@ -59,6 +72,18 @@ def scale_plot(
         ylabel='Eixo y',
         legend=[]
     ):
+    """
+    Plota múltiplas curvas ajustando um fator de escala a cada
+    uma para assegurar a visualização adequada dos dados
+
+    Args:
+        x (np.ndarray): valores da variável do eixo x
+        Y (np.ndarray): valores da(s) variável(is) do eixo y
+        title (string): título do gráfico
+        xlabel (string): legenda do eixo x
+        ylabel (string): legenda do eixo y
+        legend (list): legendas para cada curva (recebem a escala)
+    """
     base10_scales = get_scales(Y)
     n = len(legend)
 

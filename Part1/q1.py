@@ -35,5 +35,5 @@ for h in steps:
         title  = f"RK4 com passo h = {h}",
         ylabel = "Corrente e Carga (SI × 10^x)",
         xlabel = "Tempo (s)",
-        legend=['i1', 'i2', 'q', 'di1/dt', 'di2/dt'],
+        legend = ['i1', 'i2', 'q', 'di1/dt', 'di2/dt'],
         )
