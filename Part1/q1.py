@@ -1,6 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-from runge_kutta import RK4
+from runge_kutta import RK4, scale_plot
 
 
 global Ra, La, Rb, Lb, C, e
@@ -22,5 +23,8 @@ F = [f1, f2, f3]
 
 t0 = 0.0
 
+T, Y_hist, K1_hist = RK4(F, t0, Y0, h=1e-5, tf=0.03)
 
-print(RK4(F, t0, Y0, h=0.001, tf=0.03))
+Y = np.vstack([Y_hist, K1_hist[0:2]])
+
+scale_plot(T, Y)
