@@ -49,17 +49,27 @@ def get_scales(Y):
         power = np.log10(amplitudes[median_idx]/amplitudes[i])
         scales[i, 0] = int(np.round(power))
 
-    return 10 ** scales
+    return list(10 ** scales)
 
 
-def scale_plot(x, Y, title='Gráfico', xlabel='Eixo x', ylabel='Eixo y'):
+def scale_plot(
+        x, Y,
+        title='Gráfico',
+        xlabel='Eixo x',
+        ylabel='Eixo y',
+        legend=[]
+    ):
     base10_scales = get_scales(Y)
+    n = len(legend)
+
+    scales_legend = [f"{legend[i]} × {base10_scales[i][0]:.0e}" for i in range(n)]
 
     plt.style.use('seaborn')
     plt.plot(x, (Y * base10_scales).T)
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+    plt.legend(scales_legend)
     plt.show()
 
     return

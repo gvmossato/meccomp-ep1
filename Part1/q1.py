@@ -23,8 +23,17 @@ F = [f1, f2, f3]
 
 t0 = 0.0
 
-T, Y_hist, K1_hist = RK4(F, t0, Y0, h=1e-5, tf=0.03)
+steps = [1e-6, 1e-3, 1e-2]
 
-Y = np.vstack([Y_hist, K1_hist[0:2]])
+for h in steps:
+    T, Y_hist, K1_hist = RK4(F, t0, Y0, h, tf=0.03)
 
-scale_plot(T, Y)
+    Y = np.vstack([Y_hist, K1_hist[0:2]])
+
+    scale_plot(
+        T, Y,
+        title  = f"RK4 com passo h = {h}",
+        ylabel = "Corrente e Carga (SI × 10^x)",
+        xlabel = "Tempo (s)",
+        legend=['i1', 'i2', 'q', 'di1/dt', 'di2/dt'],
+        )
