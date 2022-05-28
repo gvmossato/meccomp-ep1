@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# ======= #
+# Parte 1 #
+# ======= #
 
 def RK4(F: list, t0: float, Y0: list, h: float, tf: float) -> tuple:
     """
@@ -98,3 +101,22 @@ def scale_plot(
     plt.show()
 
     return
+
+# ======= #
+# Parte 2 #
+# ======= #
+
+
+
+# ========== #
+# Miscelania #
+# ========== #
+
+def validate_input(text, valid_inputs):
+    valid_inputs = [str(v) for v in valid_inputs]
+
+    while True:
+        user_input = input(text).lower()
+        if user_input in valid_inputs: break
+        print('Entrada inválida!')
+    return user_input
