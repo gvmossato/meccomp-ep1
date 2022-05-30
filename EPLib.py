@@ -112,11 +112,23 @@ def scale_plot(
 # Miscelania #
 # ========== #
 
-def validate_input(text, valid_inputs):
+def validate_input(text: str, valid_inputs: list, default: str = '') -> str:
+    """
+    Adicona lógica de validação de entrada e valor de entrada padrão
+    ao input do Python. Validações realizadas sempre com caracteres minúsculos.
+
+    Args:
+        text (str): texto a ser exibido ao solicitar input
+        valid_inputs (list): lista de entradas aceitas
+        default (str): entrada padrão caso o usuário não insira uma
+
+    Returns:
+        str: entrada do usuário devidamente validada
+    """
     valid_inputs = [str(v) for v in valid_inputs]
 
     while True:
-        user_input = input(text).lower()
+        user_input = input(text).lower() or default
         if user_input in valid_inputs: break
         print('Entrada inválida!')
     return user_input
