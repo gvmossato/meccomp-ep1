@@ -107,6 +107,10 @@ def scale_plot(
 # ======= #
 
 def validate_step(h, contour_gcd):
+    """
+    Realiza a validação do passo para o meshgrid, assegurando que os
+    contornos sejam devidamente representados
+    """
     return contour_gcd / np.round(contour_gcd / h)
 
 def gen_meshgrid(
@@ -187,20 +191,3 @@ def ctext(text: str, tag: str) -> str:
     text = color_dict[tag] + text + '\033[0m'
 
     return text
-
-
-
-
-
-# h: entrada do user -- tamanho passo
-# n: número de passos
-
-# h = mdc_contornos / k => k = mdc_contornos / h
-
-
-
-# n =  max * k
-# if n int: true
-# else:
-
-# k = 1/h
