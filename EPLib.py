@@ -106,7 +106,27 @@ def scale_plot(
 # Parte 2 #
 # ======= #
 
+def validate_step(h, contour_gcd):
+    return contour_gcd / np.round(contour_gcd / h)
 
+def gen_meshgrid(
+    r_step: float, phi_step: float,
+    r_start: float = 0.03, r_end: float = 0.08,
+    phi_start: float = 0.0, phi_end: float = 40.0
+    ) -> np.ndarray:
+
+    h_r = validate_step(r_step, 0.01)
+    h_phi = validate_step(phi_step, 2.0)
+
+    r_axis = np.arange(r_start, r_end+h_r, h_r)
+    phi_axis = np.deg2rad(np.arange(phi_start, phi_end+h_r, h_phi))
+
+    r_vals, phi_vals = np.meshgrid(r_axis, phi_axis)
+
+    x_vals = r_vals * np.cos(phi_vals)
+    y_vals = r_vals * np.sin(phi_vals)
+
+    return x_vals, y_vals
 
 # ========== #
 # Miscelania #
@@ -167,3 +187,20 @@ def ctext(text: str, tag: str) -> str:
     text = color_dict[tag] + text + '\033[0m'
 
     return text
+
+
+
+
+
+# h: entrada do user -- tamanho passo
+# n: número de passos
+
+# h = mdc_contornos / k => k = mdc_contornos / h
+
+
+
+# n =  max * k
+# if n int: true
+# else:
+
+# k = 1/h
