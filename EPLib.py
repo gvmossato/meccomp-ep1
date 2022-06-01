@@ -1,5 +1,7 @@
+from turtle import width
 import numpy as np
 import matplotlib.pyplot as plt
+import plotly.graph_objs as go
 
 # ======= #
 # Parte 1 #
@@ -117,6 +119,11 @@ class Plate:
         self.r_vals = np.arange(r_start, r_stop+self.h_r, self.h_r)
         self.phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+self.h_phi, self.h_phi))
 
+        r_grid, phi_grid = np.meshgrid(self.r_vals, self.phi_vals)
+
+        self.x_grid = r_grid * np.cos(phi_grid)
+        self.y_grid = r_grid * np.sin(phi_grid)
+
         self.boundaries_map = func_boundaries
 
         self.meshgrid = self._gen_meshgrid()
@@ -144,7 +151,7 @@ class Plate:
     def _gen_meshgrid(self):
         n_i = len(self.r_vals)
         n_j = len(self.phi_vals)
-        meshgrid = np.zeros((n_i, n_j))
+        meshgrid = np.array([[None] * n_j] * n_i)
 
         for i in range(n_i):
             r = self.r_vals[i]
@@ -152,13 +159,35 @@ class Plate:
             for j in range(n_j):
                 phi = self.phi_vals[j]
 
-                meshgrid[i, j] = Point(
-                    (i, j)
-                    (r ,phi)
+                meshgrid[i, j]  = Point(
+                    (i, j),
+                    (r, phi),
                     (0, 0),
                     self._assign_function((r, phi))
                 )
         return meshgrid
+
+    def _plot_meshgrid(self):
+        z = np.ones(self.x_grid.shape)
+
+        lines = []
+        line_marker = dict(color='#a3a3a3', width=2)
+        marker = dict(color='#0066FF', size=4)
+        for i, j, k in zip(self.x_grid, self.y_grid, z):
+            lines.append(go.Scatter3d(x=i, y=j, z=k, mode='lines', line=line_marker))
+            lines.append(go.Scatter3d(x=i, y=j, z=k, mode='markers', marker=marker))
+
+        for i, j, k in zip(self.x_grid.T, self.y_grid.T, z.T):
+            lines.append(go.Scatter3d(x=i, y=j, z=k, mode='lines', line=line_marker))
+
+        fig = go.Figure(data=lines)
+        fig.show()
+
+    def _plot_voltage(self):
+        pass
+
+    def _plot_temperature(self):
+        pass
 
     def plot(self, which):
         which_plot = {
@@ -171,6 +200,7 @@ class Plate:
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
         # base plot
+        print('PLOT')
         which_plot[which]
         # show
         return
@@ -184,8 +214,7 @@ class Point:
         self.V, self.T = data
         self.V_func = V_func
 
-        self.x = self.r * np.cos(self.phi)
-        self.y = self.r * np.sin(self.phi)
+        self.x, self.y = self.r * np.array([np.cos(self.phi), np.sin(self.phi)])
 
     def update_voltage(self):
         return self.V_func(self.i, self.j)
