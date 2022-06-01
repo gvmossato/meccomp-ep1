@@ -119,7 +119,7 @@ class Plate:
 
         self.boundaries_map = func_boundaries
 
-        self.grid = self._gen_meshgrid()
+        self.meshgrid = self._gen_meshgrid()
 
     def _validate_step(self, h: float, contour_gcd: float):
         """
@@ -144,7 +144,7 @@ class Plate:
     def _gen_meshgrid(self):
         n_i = len(self.r_vals)
         n_j = len(self.phi_vals)
-        grid = np.zeros((n_i, n_j))
+        meshgrid = np.zeros((n_i, n_j))
 
         for i in range(n_i):
             r = self.r_vals[i]
@@ -152,13 +152,30 @@ class Plate:
             for j in range(n_j):
                 phi = self.phi_vals[j]
 
-                grid[i, j] = Point(
+                meshgrid[i, j] = Point(
                     (i, j)
                     (r ,phi)
                     (0, 0),
                     self._assign_function((r, phi))
                 )
-        return grid
+        return meshgrid
+
+    def plot(self, which):
+        which_plot = {
+            'meshgrid'    : self._plot_meshgrid(),
+            'voltage'     : self._plot_voltage(),
+            'temperature' : self._plot_temperature()
+        }
+
+        if which not in which_plot.keys():
+            raise ValueError(f"Unexpected value '{which}' passed to `which`")
+
+        # base plot
+        which_plot[which]
+        # show
+        return
+
+
 
 class Point:
     def __init__(self, index, cordinates, data, V_func):
