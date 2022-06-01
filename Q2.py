@@ -10,14 +10,6 @@ def gray(point, neigh_temps, equations):
     numerator = coeffs * neigh_temps
     return numerator / denominator
 
-
-global p, sig_a, sig_b
-
-r_range = [0.03, 0.11, 0.001]
-phi_range = [0.0, 40.0, 1.0]
-
-p = Plate(r_range, phi_range)
-
 regions = [
     [     (0.03, 0.03),      (00.0, 40.0)], # Vermelho
     [     (0.05, 0.05),      (00.0, 18.0)], # Azul
@@ -29,53 +21,66 @@ regions = [
 ]
 regions = np.deg2rad(regions[:, 1])
 
-equations = [
-    lambda r: [ # Vermelho
+coeffs = [
+    lambda r, dr, dp, sa, sb: [ # Vermelho
         0,
         0,
         0,
         0,
-        np.inf
+        100
     ],
-    lambda r: [ # Azul
-        -p.delta_r**3 * sig_a + p.delta_r**3 * sig_b + 2 * p.delta_r**2 * sig_a * r + 2 * p.delta_r**2 * sig_b * r,
-        2 * p.delta_phi**2 * p.delta_r * sig_b * r**2 + 4 * p.delta_phi**2 * sig_b * r**3,
-        -p.delta_r**3 * sig_a + p.delta_r**3 * sig_b + 2 * p.delta_r**2 * sig_a * r + 2 * p.delta_r**2 * sig_b * r,
-        -2 * p.delta_phi**2 * p.delta_r * sig_a * r**2 + 4 * p.delta_phi**2 * sig_a * r**3,
-        2 * (p.delta_phi**2 * r**2 + p.delta_r**2) * (p.delta_r * sig_a - p.delta_r * sig_b - 2 * sig_a * r - 2 * sig_b * r)
+    lambda r, dr, dp, sa, sb: [ # Azul
+        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
+        ( dp**2 * sb * r**2 * (dr  + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sb-sa) + 2*r*(sa+sb)) ),
+        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
+        ( dp**2 * sa * r**2 * (-dr + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sb-sa) + 2*r*(sa+sb)) ),
+        0
     ],
-    lambda r: [ # Verde
-        p.delta_r**3 * sig_a - p.delta_r**3 * sig_b + 2 * p.delta_r**2 * sig_a * r + 2 * p.delta_r**2 * sig_b * r,
-        2 * p.delta_phi**2 * p.delta_r * sig_a * r**2 + 4 * p.delta_phi**2 * sig_a * r**3,
-        p.delta_r**3 * sig_a - p.delta_r**3 * sig_b + 2 * p.delta_r**2 * sig_a * r + 2 * p.delta_r**2 * sig_b * r,
-        -2 * p.delta_phi**2 * p.delta_r * sig_b * r**2 + 4 * p.delta_phi**2 * sig_b * r**3,
-        2 * (p.delta_phi**2 * r**2 + p.delta_r**2) * (p.delta_r * sig_a - p.delta_r * sig_b + 2 * sig_a * r + 2 * sig_b * r)
+    lambda r, dr, dp, sa, sb: [ # Verde
+        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
+        ( dp**2 * sa * r**2 * (dr  + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sa-sb) + 2*r*(sa+sb)) ),
+        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
+        ( dp**2 * sb * r**2 * (-dr + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sa-sb) + 2*r*(sa+sb)) ),
+        0
     ],
-    lambda r: [ # Rosa
+    lambda r, dr, dp, sa, sb: [ # Rosa
         0,
         0,
         0,
         0,
-        np.inf
+        0
     ],
-    lambda r: [ # Roxo
-        4 * p.delta_r**2 * sig_b,
-        p.delta_phi**2 * p.delta_r * sig_a * r + p.delta_phi**2 * p.delta_r * sig_b * r + 2 * p.delta_phi**2 * sig_a * r**2 + 2 * p.delta_phi**2 * sig_b * r**2,
-        4 * p.delta_r**2 * sig_a,
-        -p.delta_phi**2 * p.delta_r * sig_a * r - p.delta_phi**2 * p.delta_r * sig_b * r + 2 * p.delta_phi**2 * sig_a * r**2 + 2 * p.delta_phi**2 * sig_b * r**2,
-        4 * (sig_a + sig_b) * (p.delta_phi**2 * r**2 + p.delta_r**2)
+    lambda r, dr, dp, sa, sb: [ # Roxo
+        ( dr**2 * sa ) / ( (sa+sb) * (dp**2 * r**2 + dr**2) ),
+        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        ( dr**2 * sb ) / ( (sa+sb) * (dp**2 * r**2 + dr**2) ),
+        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        0
     ],
-    lambda r: [ # Laranja
+    lambda r, dr, dp, sa, sb: [ # Laranja
         0,
-        p.delta_phi**2 * p.delta_r * r + 2 * p.delta_phi**2 * r**2,
-        4 * p.delta_r**2,
-        -p.delta_phi**2 * p.delta_r * r + 2 * p.delta_phi**2 * r**2,
-        4 * (p.delta_phi**2 * r**2 + p.delta_r**2)
+        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
+        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        0
     ]
 ]
 
-p.add_boundaries(regions, equations)
 
-print(f'meshgrid finalizada! {p.meshgrid.shape}')
+equations = {
+    'regions' : regions,
+    'coeffs' : coeffs
+}
 
-p.plot('meshgrid')
+materials = [2, 3]
+
+r_range = [0.03, 0.11, 0.001]
+phi_range = [0.0, 40.0, 1.0]
+
+plate = Plate(r_range, phi_range, equations, materials)
+
+plate.add_boundaries(regions, equations)
+
+print(f'meshgrid finalizada! {plate.meshgrid.shape}')
+
+plate.plot('meshgrid')

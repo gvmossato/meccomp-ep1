@@ -109,24 +109,28 @@ def scale_plot(
 # ======= #
 
 class Plate:
-    def __init__(self, r_range, phi_range, func_boundaries):
+    def __init__(self, r_range, phi_range, equations, materials=[]):
+
+        self.h_r, self.h_phi,
+        self.r_vals, self.phi_vals = self._gen_range(r_range, phi_range)
+        self.x_grid, self.y_grid, self.meshgrid = self._gen_meshgrid()
+
+        self.boundaries = equations['regions']
+        self.coeffs_formula = equations['coeffs']
+        self.materials = materials
+
+    def _gen_range(self, r_range, phi_range):
         r_start, r_stop, r_step = r_range
         phi_start, phi_stop, phi_step = phi_range
 
-        self.h_r = self._validate_step(r_step, 0.01)
-        self.h_phi = self._validate_step(phi_step, 2.0)
+        h_r = self._validate_step(r_step, 0.01)
+        h_phi = self._validate_step(phi_step, 2.0)
 
-        self.r_vals = np.arange(r_start, r_stop+self.h_r, self.h_r)
-        self.phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+self.h_phi, self.h_phi))
+        r_vals = np.arange(r_start, r_stop+h_r, h_r)
+        phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+h_phi, h_phi))
 
-        r_grid, phi_grid = np.meshgrid(self.r_vals, self.phi_vals)
+        return h_r, h_phi, r_vals, phi_vals
 
-        self.x_grid = r_grid * np.cos(phi_grid)
-        self.y_grid = r_grid * np.sin(phi_grid)
-
-        self.boundaries_map = func_boundaries
-
-        self.meshgrid = self._gen_meshgrid()
 
     def _validate_step(self, h: float, contour_gcd: float):
         """
@@ -140,19 +144,25 @@ class Plate:
         """
         return contour_gcd / np.round(contour_gcd / h)
 
-    def _assign_function(self, cordinates):
+    def _assign_params(self, cordinates):
         r, phi = cordinates
 
-        for intervals, function in self.boundaries_map.items():
-            lower_r, upper_r, lower_phi, upper_phi = intervals
+        for interval, calc_coeffs in zip(self.boundaries, self.coeffs_formula):
+            lower_r, upper_r, lower_phi, upper_phi = interval
             if (lower_r <= r <= upper_r) and (lower_phi <= phi <= upper_phi):
-                return function
+                return calc_coeffs(r, self.h_r, self.h_phi, self.materials[0], self.materials[1])
 
         raise ValueError(f'Unable to find a function for {(r, phi)}')
 
     def _gen_meshgrid(self):
+        r_grid, phi_grid = np.meshgrid(self.r_vals, self.phi_vals)
+
+        x_grid = r_grid * np.cos(phi_grid)
+        y_grid = r_grid * np.sin(phi_grid)
+
         n_i = len(self.r_vals)
         n_j = len(self.phi_vals)
+
         meshgrid = np.array([[None] * n_j] * n_i)
 
         for i in range(n_i):
@@ -165,9 +175,9 @@ class Plate:
                     (i, j),
                     (r, phi),
                     (0, 0),
-                    self._assign_function((r, phi))
+                    self._assign_params((r, phi))
                 )
-        return meshgrid
+        return x_grid, y_grid, meshgrid
 
     def _plot_meshgrid(self):
         z = np.ones(self.x_grid.shape)
@@ -210,16 +220,16 @@ class Plate:
 
 
 class Point:
-    def __init__(self, index, cordinates, data, V_func):
+    def __init__(self, index, cordinates, data, voltage_params):
         self.i, self.j = index
         self.r, self.phi = cordinates
         self.V, self.T = data
-        self.V_func = V_func
+        self.voltage_params = voltage_params
 
         self.x, self.y = self.r * np.array([np.cos(self.phi), np.sin(self.phi)])
 
-    def update_voltage(self):
-        return self.V_func(self.i, self.j)
+    def update_voltage(self, neighbours):
+        return np.sum(self.coeffs * neighbours)
 
 # ========== #
 # Miscelania #
