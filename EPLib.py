@@ -106,31 +106,72 @@ def scale_plot(
 # Parte 2 #
 # ======= #
 
-def validate_step(h, contour_gcd):
-    """
-    Realiza a validação do passo para o meshgrid, assegurando que os
-    contornos sejam devidamente representados
-    """
-    return contour_gcd / np.round(contour_gcd / h)
+class Plate:
+    def __init__(self, r_range, phi_range, func_boundaries):
+        r_start, r_stop, r_step = r_range
+        phi_start, phi_stop, phi_step = phi_range
 
-def gen_meshgrid(
-    r_step: float, phi_step: float,
-    r_start: float = 0.03, r_end: float = 0.08,
-    phi_start: float = 0.0, phi_end: float = 40.0
-    ) -> np.ndarray:
+        self.h_r = self._validate_step(r_step, 0.01)
+        self.h_phi = self._validate_step(phi_step, 2.0)
 
-    h_r = validate_step(r_step, 0.01)
-    h_phi = validate_step(phi_step, 2.0)
+        self.r_vals = np.arange(r_start, r_stop+self.h_r, self.h_r)
+        self.phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+self.h_phi, self.h_phi))
 
-    r_axis = np.arange(r_start, r_end+h_r, h_r)
-    phi_axis = np.deg2rad(np.arange(phi_start, phi_end+h_r, h_phi))
+        self.boundaries_map = func_boundaries
 
-    r_vals, phi_vals = np.meshgrid(r_axis, phi_axis)
+        self.grid = self._gen_meshgrid()
 
-    x_vals = r_vals * np.cos(phi_vals)
-    y_vals = r_vals * np.sin(phi_vals)
+    def _validate_step(self, h: float, contour_gcd: float):
+        """
+        Realiza a validação do passo para o meshgrid, assegurando que os
+        contornos sejam devidamente representados
 
-    return x_vals, y_vals
+        Args:
+            h (float): passo a ser validado
+            contour_gcd (float): máximo divisor comum dos extremos dos contornos
+                                para o eixo
+        """
+        return contour_gcd / np.round(contour_gcd / h)
+
+    def _assign_function(self, cordinates):
+        r, phi = cordinates
+
+        for intervals, function in self.boundaries_map.items():
+            lower_r, upper_r, lower_phi, upper_phi = intervals
+            if (lower_r <= r <= upper_r) and (lower_phi <= phi <= upper_phi):
+                return function
+
+    def _gen_meshgrid(self):
+        n_i = len(self.r_vals)
+        n_j = len(self.phi_vals)
+        grid = np.zeros((n_i, n_j))
+
+        for i in range(n_i):
+            r = self.r_vals[i]
+
+            for j in range(n_j):
+                phi = self.phi_vals[j]
+
+                grid[i, j] = Point(
+                    (i, j)
+                    (r ,phi)
+                    (0, 0),
+                    self._assign_function((r, phi))
+                )
+        return grid
+
+class Point:
+    def __init__(self, index, cordinates, data, V_func):
+        self.i, self.j = index
+        self.r, self.phi = cordinates
+        self.V, self.T = data
+        self.V_func = V_func
+
+        self.x = self.r * np.cos(self.phi)
+        self.y = self.r * np.sin(self.phi)
+
+    def update_voltage(self):
+        return self.V_func(self.i, self.j)
 
 # ========== #
 # Miscelania #
