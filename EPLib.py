@@ -148,6 +148,8 @@ class Plate:
             if (lower_r <= r <= upper_r) and (lower_phi <= phi <= upper_phi):
                 return function
 
+        raise ValueError(f'Unable to find a function for {(r, phi)}')
+
     def _gen_meshgrid(self):
         n_i = len(self.r_vals)
         n_j = len(self.phi_vals)
