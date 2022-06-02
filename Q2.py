@@ -51,17 +51,17 @@ coeffs = [
         0
     ],
     lambda r, dr, dp, sa, sb: [ # Laranja
-        ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
-        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0,
         ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
+        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0
     ],
     lambda r, dr, dp, sa, sb: [ # Cinza
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
         ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
-        ( dp**2 * r * (-dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0
     ]
 ]
