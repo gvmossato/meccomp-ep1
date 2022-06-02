@@ -63,12 +63,12 @@ coeffs = [
         ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
         ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0
-    ]
+    ],
     lambda r, dr, dp, sa, sb: [ # Cinza
-        0,
+        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
         ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
-        ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
-        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
+        ( dp**2 * r * (-dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0
     ]
 ]
@@ -85,9 +85,3 @@ r_range = [0.03, 0.11, 0.001]
 phi_range = [0.0, 40.0, 1.0]
 
 plate = Plate(r_range, phi_range, equations, materials)
-
-plate.add_boundaries(regions, equations)
-
-print(f'meshgrid finalizada! {plate.meshgrid.shape}')
-
-plate.plot('meshgrid')

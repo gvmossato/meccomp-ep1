@@ -141,9 +141,7 @@ class Plate:
 
         for intervals, get_coeffs in zip(self.boundaries, self.coeffs_formula):
             lower_r, upper_r, lower_phi, upper_phi = intervals
-            print(intervals)
             if (lower_r <= r <= upper_r) and (lower_phi <= phi <= upper_phi):
-                print('got!')
                 return get_coeffs(r, self.h_r, self.h_phi, *self.materials)
         raise ValueError(f'Unable to find a function for {(r, phi)}')
 
