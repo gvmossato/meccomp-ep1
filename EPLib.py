@@ -39,7 +39,6 @@ def RK4(F: list, t0: float, Y0: list, h: float, tf: float) -> tuple:
         K1_hist.append(np.copy(K1))
 
         Y += (h/6) * (K1 + 2*K2 + 2*K3 + K4)
-
     return (T, np.transpose(Y_hist), np.transpose(K1_hist))
 
 
@@ -57,7 +56,6 @@ def get_scales(Y: np.ndarray) -> np.ndarray:
                     intervalo próximo ao da amplitude mediana
     """
     n = len(Y)
-
     scales = np.zeros((n, 1))
     amplitudes = np.max(Y, axis=1) - np.min(Y, axis=1)
     median_idx = np.argsort(amplitudes)[n//2]
@@ -66,7 +64,6 @@ def get_scales(Y: np.ndarray) -> np.ndarray:
         # a * 10**x == b => x == np.log10(b/a)
         power = np.log10(amplitudes[median_idx]/amplitudes[i])
         scales[i, 0] = np.round(power)
-
     return 10 ** scales
 
 
@@ -90,9 +87,9 @@ def scale_plot(
         legend (list): legendas para cada curva (recebem a escala)
     """
     base10_scales = get_scales(Y)
-    n = len(legend)
-
-    scales_legend = [f"{legend[i]} × {base10_scales[i][0]:.0e}" for i in range(n)]
+    scales_legend = [
+        f"{legend[i]} × {base10_scales[i][0]:.0e}" for i in range(len(legend))
+    ]
 
     plt.style.use('seaborn')
     plt.plot(x, (Y * base10_scales).T)
@@ -101,7 +98,6 @@ def scale_plot(
     plt.ylabel(ylabel)
     plt.legend(scales_legend)
     plt.show()
-
     return
 
 # ======= #
@@ -110,7 +106,6 @@ def scale_plot(
 
 class Plate:
     def __init__(self, r_range, phi_range, equations, materials=[]):
-
         self.h_r, self.h_phi,
         self.r_vals, self.phi_vals = self._gen_range(r_range, phi_range)
         self.x_grid, self.y_grid, self.meshgrid = self._gen_meshgrid()
@@ -118,19 +113,6 @@ class Plate:
         self.boundaries = equations['regions']
         self.coeffs_formula = equations['coeffs']
         self.materials = materials
-
-    def _gen_range(self, r_range, phi_range):
-        r_start, r_stop, r_step = r_range
-        phi_start, phi_stop, phi_step = phi_range
-
-        h_r = self._validate_step(r_step, 0.01)
-        h_phi = self._validate_step(phi_step, 2.0)
-
-        r_vals = np.arange(r_start, r_stop+h_r, h_r)
-        phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+h_phi, h_phi))
-
-        return h_r, h_phi, r_vals, phi_vals
-
 
     def _validate_step(self, h: float, contour_gcd: float):
         """
@@ -144,14 +126,24 @@ class Plate:
         """
         return contour_gcd / np.round(contour_gcd / h)
 
-    def _assign_params(self, cordinates):
+    def _gen_range(self, r_range, phi_range):
+        r_start, r_stop, r_step = r_range
+        phi_start, phi_stop, phi_step = phi_range
+
+        h_r = self._validate_step(r_step, 0.01)
+        h_phi = self._validate_step(phi_step, 2.0)
+
+        r_vals = np.arange(r_start, r_stop+h_r, h_r)
+        phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+h_phi, h_phi))
+        return h_r, h_phi, r_vals, phi_vals
+
+    def _assign_coeffs(self, cordinates):
         r, phi = cordinates
 
-        for interval, calc_coeffs in zip(self.boundaries, self.coeffs_formula):
+        for interval, get_coeffs in zip(self.boundaries, self.coeffs_formula):
             lower_r, upper_r, lower_phi, upper_phi = interval
             if (lower_r <= r <= upper_r) and (lower_phi <= phi <= upper_phi):
-                return calc_coeffs(r, self.h_r, self.h_phi, self.materials[0], self.materials[1])
-
+                return get_coeffs(r, self.h_r, self.h_phi, *self.materials)
         raise ValueError(f'Unable to find a function for {(r, phi)}')
 
     def _gen_meshgrid(self):
@@ -175,31 +167,30 @@ class Plate:
                     (i, j),
                     (r, phi),
                     (0, 0),
-                    self._assign_params((r, phi))
+                    self._assign_coeffs((r, phi))
                 )
         return x_grid, y_grid, meshgrid
 
     def _plot_meshgrid(self):
-        z = np.ones(self.x_grid.shape)
+        z_grid = np.zeros(self.x_grid.shape)
 
-        lines = []
-        line_marker = dict(color='#a3a3a3', width=2)
-        marker = dict(color='#0066FF', size=4)
-        for i, j, k in zip(self.x_grid, self.y_grid, z):
-            lines.append(go.Scatter3d(x=i, y=j, z=k, mode='lines', line=line_marker))
-            lines.append(go.Scatter3d(x=i, y=j, z=k, mode='markers', marker=marker))
+        data = []
+        line_params   = dict(color='#A3A33', width=2)
+        marker_params = dict(color='#0066FF', size=4)
 
-        for i, j, k in zip(self.x_grid.T, self.y_grid.T, z.T):
-            lines.append(go.Scatter3d(x=i, y=j, z=k, mode='lines', line=line_marker))
+        for i, j, k in zip(self.x_grid, self.y_grid, z_grid):
+            data.append(go.Scatter3d(x=i, y=j, z=k, mode='markers', marker=marker_params))
+            data.append(go.Scatter3d(x=i, y=j, z=k, mode='lines', line=line_params))
 
-        fig = go.Figure(data=lines)
-        fig.show()
+        for i, j, k in zip(self.x_grid.T, self.y_grid.T, z_grid.T):
+            data.append(go.Scatter3d(x=i, y=j, z=k, mode='lines', line=line_params))
+        return go.Figure(data=data)
 
     def _plot_voltage(self):
-        pass
+        raise NotImplementedError
 
     def _plot_temperature(self):
-        pass
+        raise NotImplementedError
 
     def plot(self, which):
         which_plot = {
@@ -211,12 +202,9 @@ class Plate:
         if which not in which_plot.keys():
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
-        # base plot
-        print('PLOT')
-        which_plot[which]
-        # show
+        fig = which_plot[which]
+        fig.show()
         return
-
 
 
 class Point:
@@ -226,7 +214,8 @@ class Point:
         self.V, self.T = data
         self.voltage_params = voltage_params
 
-        self.x, self.y = self.r * np.array([np.cos(self.phi), np.sin(self.phi)])
+        self.x = self.r * np.cos(self.phi)
+        self.y = self.r * np.sin(self.phi)
 
     def update_voltage(self, neighbours):
         return np.sum(self.coeffs * neighbours)
