@@ -3,13 +3,6 @@ import numpy as np
 from EPLib import Plate
 
 
-def gray(point, neigh_temps, equations):
-    coeffs = equations[:-1]
-    denominator = equations[-1]
-
-    numerator = coeffs * neigh_temps
-    return numerator / denominator
-
 regions = np.array([
     [   0.03,   0.03,    00.0,   40.0], # Vermelho
     [   0.05,   0.05,    00.0,   18.0], # Azul
@@ -58,10 +51,10 @@ coeffs = [
         0
     ],
     lambda r, dr, dp, sa, sb: [ # Laranja
-        0,
-        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
         ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        0,
+        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0
     ],
     lambda r, dr, dp, sa, sb: [ # Cinza
@@ -73,15 +66,42 @@ coeffs = [
     ]
 ]
 
+initial = [
+    100, # Vermelho
+      0, # Azul
+      0, # Verde
+      0, # Rosa
+      0, # Roxo
+      0, # Laranja
+      0  # Cinza
+]
 
-equations = {
+colors = [
+    "#FF0000", # Vermelho
+    "#0000FF", # Azul
+    "#00FF00", # Verde
+    "#FF0070", # Rosa
+    "#9000FF", # Roxo
+    "#FF6000", # Laranja
+    "#A7A7A7"  # Cinza
+]
+
+params = {
     'regions' : regions,
-    'coeffs' : coeffs
+    'coeffs'  : coeffs,
+    'initial' : initial,
+    'colors'  : colors
 }
 
-materials = [2, 3]
+materials = [5e-6, 1e-5]
 
 r_range = [0.03, 0.11, 0.001]
 phi_range = [0.0, 40.0, 1.0]
 
-plate = Plate(r_range, phi_range, equations, materials)
+plate = Plate(r_range, phi_range, params, materials)
+
+plate.liebmann(0.75, 0.1)
+
+#plate.plot('meshgrid')
+
+plate.plot('voltage')
