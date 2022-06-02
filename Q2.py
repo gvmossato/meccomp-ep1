@@ -10,16 +10,16 @@ def gray(point, neigh_temps, equations):
     numerator = coeffs * neigh_temps
     return numerator / denominator
 
-regions = [
-    [     (0.03, 0.03),      (00.0, 40.0)], # Vermelho
-    [     (0.05, 0.05),      (00.0, 18.0)], # Azul
-    [     (0.08, 0.08),      (00.0, 18.0)], # Verde
-    [     (0.11, 0.11),      (00.0, 40.0)], # Rosa
-    [     (0.03, 0.11),      (40.0, 40.0)], # Roxo
-    [     (0.05, 0.08),      (18.0, 18.0)], # Laranja
-    [(-np.inf, np.inf), (-np.inf, np.inf)]  # Cinza
-]
-regions = np.deg2rad(regions[:, 1])
+regions = np.array([
+    [   0.03,   0.03,    00.0,   40.0], # Vermelho
+    [   0.05,   0.05,    00.0,   18.0], # Azul
+    [   0.08,   0.08,    00.0,   18.0], # Verde
+    [   0.11,   0.11,    00.0,   40.0], # Rosa
+    [   0.03,   0.11,    40.0,   40.0], # Roxo
+    [   0.05,   0.08,    18.0,   18.0], # Laranja
+    [-np.inf, np.inf, -np.inf, np.inf]  # Cinza
+])
+regions[:, -2:] = np.deg2rad(regions[:, -2:])
 
 coeffs = [
     lambda r, dr, dp, sa, sb: [ # Vermelho
@@ -58,6 +58,13 @@ coeffs = [
         0
     ],
     lambda r, dr, dp, sa, sb: [ # Laranja
+        0,
+        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
+        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        0
+    ]
+    lambda r, dr, dp, sa, sb: [ # Cinza
         0,
         ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),

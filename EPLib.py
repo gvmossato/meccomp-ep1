@@ -106,13 +106,12 @@ def scale_plot(
 
 class Plate:
     def __init__(self, r_range, phi_range, equations, materials=[]):
-        self.h_r, self.h_phi,
-        self.r_vals, self.phi_vals = self._gen_range(r_range, phi_range)
-        self.x_grid, self.y_grid, self.meshgrid = self._gen_meshgrid()
-
         self.boundaries = equations['regions']
         self.coeffs_formula = equations['coeffs']
         self.materials = materials
+
+        self.h_r, self.h_phi, self.r_vals, self.phi_vals = self._gen_range(r_range, phi_range)
+        self.x_grid, self.y_grid, self.meshgrid = self._gen_meshgrid()
 
     def _validate_step(self, h: float, contour_gcd: float):
         """
@@ -140,9 +139,11 @@ class Plate:
     def _assign_coeffs(self, cordinates):
         r, phi = cordinates
 
-        for interval, get_coeffs in zip(self.boundaries, self.coeffs_formula):
-            lower_r, upper_r, lower_phi, upper_phi = interval
+        for intervals, get_coeffs in zip(self.boundaries, self.coeffs_formula):
+            lower_r, upper_r, lower_phi, upper_phi = intervals
+            print(intervals)
             if (lower_r <= r <= upper_r) and (lower_phi <= phi <= upper_phi):
+                print('got!')
                 return get_coeffs(r, self.h_r, self.h_phi, *self.materials)
         raise ValueError(f'Unable to find a function for {(r, phi)}')
 
@@ -206,19 +207,57 @@ class Plate:
         fig.show()
         return
 
+    def voltage(self):
+        n_i = len(self.r_vals)
+        n_j = len(self.phi_vals)
+
+        voltage_matrix = np.array([[None] * n_j] * n_i)
+
+        for point in self.meshgrid:
+            voltage_matrix[point.i, point.j] = point.V
+        return voltage_matrix
+
+    def _liebmann_step(self, lamb):
+        for i in len(self.meshgrid):
+            for j in len(self.meshgrid[0]):
+                neighbours = []
+                indexes = [(i-1, j), (i, j+1), (i+1, j), (i, j-1)]
+
+                for idx in indexes:
+                    try:
+                        neighbours.append(self.meshgrid[idx])
+                    except IndexError:
+                        neighbours.append(0)
+
+                neighbours.append(1)
+
+                new_V = self.meshgrid[i, j].update_voltage(neighbours)
+
+                self.meshgrid[i, j].V = lamb*new_V + (1-lamb)*self.meshgrid[i, j].V
+
+    def liebmann(self, lamb, epsilon):
+        error = np.inf
+
+        while error > epsilon:
+            before = np.copy(self.meshgrid.voltage())
+
+            self._liebmann_step(lamb)
+
+            error = np.max(np.abs(self.meshgrid.voltage() - before))
+
 
 class Point:
-    def __init__(self, index, cordinates, data, voltage_params):
+    def __init__(self, index, cordinates, data, voltage_coeffs):
         self.i, self.j = index
         self.r, self.phi = cordinates
         self.V, self.T = data
-        self.voltage_params = voltage_params
+        self.voltage_coeffs = voltage_coeffs
 
         self.x = self.r * np.cos(self.phi)
         self.y = self.r * np.sin(self.phi)
 
     def update_voltage(self, neighbours):
-        return np.sum(self.coeffs * neighbours)
+        return np.sum(self.voltage_coeffs * neighbours)
 
 # ========== #
 # Miscelania #
