@@ -113,7 +113,7 @@ class Plate:
         self.materials = materials
 
         self.h_r, self.h_phi, self.r_vals, self.phi_vals = self._gen_range(r_range, phi_range)
-        self.base_matrix = self._gen_base_matrix(len(self.r_vals), len(self.phi_vals))
+        self.base_matrix = self._gen_base_matrix(len(self.phi_vals), len(self.r_vals))
         self.x_grid, self.y_grid, self.meshgrid = self._gen_grids()
 
     def _validate_step(self, h: float, contour_gcd: float):
@@ -169,10 +169,10 @@ class Plate:
         y_grid = r_grid * np.sin(phi_grid)
 
         meshgrid = np.copy(self.base_matrix)
-        for i in range(len(self.r_vals)):
-            r = self.r_vals[i]
-            for j in range(len(self.phi_vals)):
-                phi = self.phi_vals[j]
+        for j in range(len(self.r_vals)):
+            r = self.r_vals[j]
+            for i in range(len(self.phi_vals)):
+                phi = self.phi_vals[i]
                 coeffs, initial_V, color = self._get_point_params(r, phi)
 
                 meshgrid[i, j]  = Point(
@@ -196,7 +196,7 @@ class Plate:
                 raise NotImplementedError
             else:
                 raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
-        return prop_matrix.T
+        return prop_matrix
 
     def _plot_meshgrid(self):
         z_grid = np.zeros(self.x_grid.shape)
@@ -242,30 +242,49 @@ class Plate:
     def _overrelaxation(self, lamb, V_curr, V_new):
         return lamb * V_new + (1-lamb) * V_curr
 
+    def _reflex_indexes(self, indexes, max_i, max_j):
+        reflected_indexes = []
+        for i, j in indexes:
+            if i == -1:
+                i += 2
+            elif i == max_i:
+                i -= 2
+            else:
+                i = i
+            if j == -1:
+                j += 2
+            elif j == max_j:
+                j -= 2
+            else:
+                j = j
+            reflected_indexes.append((i,j))
+        return reflected_indexes
+
     def _liebmann_step(self, lamb):
         for i in range(len(self.meshgrid)):
             for j in range(len(self.meshgrid[0])):
-                neighbours = []
-                indexes = [(i-1, j), (i, j+1), (i+1, j), (i, j-1)]
+                neighbours_voltages = []
+                neighbours_indexes = self._reflex_indexes(
+                    [(i-1, j), (i, j+1), (i+1, j), (i, j-1)],
+                    len(self.meshgrid),
+                    len(self.meshgrid[0])
+                )
 
-                for idx in indexes:
-                    try:
-                        neighbours.append(self.meshgrid[idx].V)
-                    except IndexError:
-                        neighbours.append(0)
+                for idx in neighbours_indexes:
+                    neighbours_voltages.append(self.meshgrid[idx].V)
 
-                neighbours.append(1)
-                V_new = self.meshgrid[i, j].update_voltage(np.array(neighbours))
+                neighbours_voltages.append(1)
+                V_new = self.meshgrid[i, j].update_voltage(np.array(neighbours_voltages))
                 self.meshgrid[i, j].V = self._overrelaxation(lamb, self.meshgrid[i, j].V, V_new)
 
     def _liebamnn_error(self, old, curr):
-        return np.max(np.abs(curr - old) / (old + np.finfo(float).eps))
+        return np.max(np.abs(curr - old) / (old + np.finfo(float).tiny))
 
     def liebmann(self, lamb, epsilon):
         error = np.inf
         step = 0
 
-        while error > epsilon:
+        while error >= epsilon:
             step += 1
             before = self.extract('voltage')
 
@@ -282,7 +301,7 @@ class Point:
         self.i, self.j = index
         self.r, self.phi = cordinates
         self.V, self.T = data
-        self.voltage_coeffs = voltage_coeffs
+        self.voltage_coeffs = np.array(voltage_coeffs)
         self.color = color
 
         self.x = self.r * np.cos(self.phi)
@@ -348,5 +367,4 @@ def ctext(text: str, tag: str) -> str:
 
     # Aplica a tag de cor e reseta para a cor padrão do terminal do usuário.
     text = color_dict[tag] + text + '\033[0m'
-
     return text
