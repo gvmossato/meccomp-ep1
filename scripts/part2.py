@@ -1,6 +1,6 @@
 import numpy as np
 
-from EPLib import Plate
+from src.lib2 import Plate
 
 
 regions = np.array([

@@ -100,10 +100,10 @@ def scale_plot(
         )
 
     fig.update_layout(
-        title=title,
-        xaxis_title=xlabel,
-        yaxis_title=ylabel,
-        legend_title="Curvas",
+        title = title,
+        xaxis_title = xlabel,
+        yaxis_title = ylabel,
+        legend_title = "Curvas",
     )
     fig.show()
     return
