@@ -1,4 +1,4 @@
-import interface
+import src.interface as interface
 
 print(
 """

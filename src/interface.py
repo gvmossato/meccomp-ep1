@@ -1,6 +1,6 @@
-import Q1
+import scripts.part1 as part1
 
-from EPLib import validate_input
+from src.utils import validate_input
 
 
 def start():
@@ -16,7 +16,7 @@ def start():
         print('c. Item B2 (Ra = 2000)')
         choosen_item = validate_input("Entre com A, B ou C: ", ['a', 'b', 'c'])
 
-        Q1.solve(choosen_item)
+        part1.solve(choosen_item)
 
     else:
         raise NotImplementedError

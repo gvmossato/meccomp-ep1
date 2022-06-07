@@ -1,6 +1,6 @@
 import numpy as np
 
-from EPLib import RK4, scale_plot
+from src.lib1 import RK4, scale_plot
 
 
 global Ra, La, Rb, Lb, C, e
@@ -35,7 +35,6 @@ def solve(item: str):
             title  = f"RK4 com passo h = {h}",
             ylabel = "Corrente e Carga (SI × 10^x)",
             xlabel = "Tempo (s)",
-            legend = ['i1', 'i2', 'q', 'di1/dt', 'di2/dt']
-            )
-
+            legend = ['i₁', 'i₂', 'q', 'di₁/dt', 'di₂/dt']
+        )
     return
