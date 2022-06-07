@@ -158,7 +158,7 @@ class Plate:
 
         r_vals = np.arange(r_start, r_stop+h_r, h_r)
         phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+h_phi, h_phi))
-        return h_r, h_phi, r_vals, phi_vals
+        return h_r, np.deg2rad(h_phi), r_vals, phi_vals
 
     def _gen_base_matrix(self, n_i, n_j):
         return np.array([[None] * n_j] * n_i)
@@ -242,43 +242,26 @@ class Plate:
     def _overrelaxation(self, lamb, V_curr, V_new):
         return lamb * V_new + (1-lamb) * V_curr
 
-    def _reflex_indexes(self, indexes, max_i, max_j):
-        reflected_indexes = []
-        for i, j in indexes:
-            if i == -1:
-                i += 2
-            elif i == max_i:
-                i -= 2
-            else:
-                i = i
-            if j == -1:
-                j += 2
-            elif j == max_j:
-                j -= 2
-            else:
-                j = j
-            reflected_indexes.append((i,j))
-        return reflected_indexes
-
     def _liebmann_step(self, lamb):
         for i in range(len(self.meshgrid)):
             for j in range(len(self.meshgrid[0])):
                 neighbours_voltages = []
-                neighbours_indexes = self._reflex_indexes(
-                    [(i-1, j), (i, j+1), (i+1, j), (i, j-1)],
-                    len(self.meshgrid),
-                    len(self.meshgrid[0])
-                )
+                neighbours_indexes = [(i+1, j), (i, j+1), (i-1, j), (i, j-1)]
 
-                for idx in neighbours_indexes:
-                    neighbours_voltages.append(self.meshgrid[idx].V)
+                for row, col in neighbours_indexes:
+                    if row == -1:
+                        neighbours_voltages.append(self.meshgrid[row+2, col].V)
+                    elif col == -1 or row == len(self.meshgrid) or col == len(self.meshgrid[0]):
+                        neighbours_voltages.append(0)
+                    else:
+                        neighbours_voltages.append(self.meshgrid[row, col].V)
 
                 neighbours_voltages.append(1)
                 V_new = self.meshgrid[i, j].update_voltage(np.array(neighbours_voltages))
                 self.meshgrid[i, j].V = self._overrelaxation(lamb, self.meshgrid[i, j].V, V_new)
 
     def _liebamnn_error(self, old, curr):
-        return np.max(np.abs(curr - old) / (old + np.finfo(float).tiny))
+        return np.max(np.abs(curr - old) / (curr + np.finfo(float).tiny))
 
     def liebmann(self, lamb, epsilon):
         error = np.inf
@@ -303,6 +286,8 @@ class Point:
         self.V, self.T = data
         self.voltage_coeffs = np.array(voltage_coeffs)
         self.color = color
+
+        #print(self.color, self.voltage_coeffs)
 
         self.x = self.r * np.cos(self.phi)
         self.y = self.r * np.sin(self.phi)

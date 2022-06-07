@@ -8,8 +8,8 @@ regions = np.array([
     [   0.05,   0.05,    00.0,   18.0], # Azul
     [   0.08,   0.08,    00.0,   18.0], # Verde
     [   0.11,   0.11,    00.0,   40.0], # Rosa
-    [   0.03,   0.11,    40.0,   40.0], # Roxo
-    [   0.05,   0.08,    18.0,   18.0], # Laranja
+    [   0.05,   0.08,    18.0,   18.0], # Roxo
+    [   0.03,   0.11,    40.0,   40.0], # Laranja
     [-np.inf, np.inf, -np.inf, np.inf]  # Cinza
 ])
 regions[:, -2:] = np.deg2rad(regions[:, -2:])
@@ -93,7 +93,7 @@ params = {
     'colors'  : colors
 }
 
-materials = [5e-6, 1e-5]
+materials = [5e-1, 1]
 
 r_range = [0.03, 0.11, 0.001]
 phi_range = [0.0, 40.0, 1.0]
