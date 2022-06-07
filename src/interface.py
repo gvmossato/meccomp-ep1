@@ -1,4 +1,4 @@
-import scripts.part1 as part1
+import scripts.solver1 as part1
 
 from src.utils import validate_input
 
