@@ -103,6 +103,10 @@ class Plate:
                 prop_matrix2[point.i, point.j] = point.J[1]['value']
             return (prop_matrix1, prop_matrix2)
 
+        elif prop == 'dot_q':
+            for point in self.meshgrid.ravel():
+                prop_matrix[point.i, point.j] = point.dot_q
+
         else:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
         return prop_matrix
@@ -115,7 +119,7 @@ class Plate:
                 z = self.get_prop('voltage')
             )])
             fig.show()
-        else:
+        elif which == 'J':
             u, v = self.get_prop('current_density')
             fig = ff.create_quiver(
                 self.x_grid,
@@ -126,6 +130,23 @@ class Plate:
                 name='quiver',
                 line_width=1
             )
+            fig.show()
+
+            # import matplotlib.pyplot as plt
+            # plt.quiver(
+            #     self.x_grid,
+            #     self.y_grid,
+            #     u,
+            #     v,
+
+            # )
+            # plt.show()
+        elif which == 'dot_q':
+            fig = go.Figure(data = [go.Surface(
+                x = self.x_grid,
+                y = self.y_grid,
+                z = self.get_prop('dot_q')
+            )])
             fig.show()
 
     def plot_meshgrid(self, which):
@@ -171,39 +192,52 @@ class Plate:
         liebmann = Liebmann(self, lamb, max_error)
         self.meshgrid = liebmann.solve_for(which)
 
-    def calculate(self, which='J'):
+    def _map_colors_to_points(self, materials_map):
+        if materials_map:
+            for point in self.meshgrid.ravel():
+                point.sigma = materials_map[point.J[1]['color']]
+        return
+
+    def calculate(self, which='J', materials_map=None):
         n_rows = len(self.meshgrid)
         n_cols = len(self.meshgrid[0])
 
-        for i in range(n_rows):
-            for j in range(n_cols):
-                neighbours_values  = []
-                neighbours_indexes = [(i, j-2), (i, j-1), (i, j), (i, j+1), (i, j+2)]
+        if which == 'J':
+            self._map_colors_to_points(materials_map)
 
-                for row_idx, col_idx in neighbours_indexes:
-                    if col_idx <= -1 or col_idx >= n_cols:
-                        neighbours_values.append(0)
-                    else:
-                        neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
+            for i in range(n_rows):
+                for j in range(n_cols):
+                    neighbours_values  = []
+                    neighbours_indexes = [(i, j-2), (i, j-1), (i, j), (i, j+1), (i, j+2)]
 
-                self.meshgrid[i, j].J[0]['value'] = self.meshgrid[i, j].update_Jr(np.array(neighbours_values))
+                    for row_idx, col_idx in neighbours_indexes:
+                        if col_idx <= -1 or col_idx >= n_cols:
+                            neighbours_values.append(0)
+                        else:
+                            neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
 
-        for i in range(n_rows):
-            for j in range(n_cols):
-                neighbours_values  = []
-                neighbours_indexes = [(i+2, j), (i+1, j), (i, j), (i-1, j), (i-2, j)]
+                    self.meshgrid[i, j].J[0]['value'] = self.meshgrid[i, j].update_Jr(np.array(neighbours_values))
 
-                for row_idx, col_idx in neighbours_indexes:
-                    if row_idx == -2:
-                        neighbours_values.append(self.meshgrid[row_idx+4, col_idx].V['value'])
-                    elif row_idx == -1:
-                        neighbours_values.append(self.meshgrid[row_idx+2, col_idx].V['value'])
-                    elif row_idx >= n_rows:
-                        neighbours_values.append(0)
-                    else:
-                        neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
+            for i in range(n_rows):
+                for j in range(n_cols):
+                    neighbours_values  = []
+                    neighbours_indexes = [(i+2, j), (i+1, j), (i, j), (i-1, j), (i-2, j)]
 
-                self.meshgrid[i, j].J[1]['value'] = self.meshgrid[i, j].update_Jphi(np.array(neighbours_values))
+                    for row_idx, col_idx in neighbours_indexes:
+                        if row_idx == -2:
+                            neighbours_values.append(self.meshgrid[row_idx+4, col_idx].V['value'])
+                        elif row_idx == -1:
+                            neighbours_values.append(self.meshgrid[row_idx+2, col_idx].V['value'])
+                        elif row_idx >= n_rows:
+                            neighbours_values.append(0)
+                        else:
+                            neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
+
+                    self.meshgrid[i, j].J[1]['value'] = self.meshgrid[i, j].update_Jphi(np.array(neighbours_values))
+
+        elif which == 'dot_q':
+            for point in self.meshgrid.ravel():
+                point.dot_q = -(point.J[0]['value']**2 + point.J[1]['value']**2) / point.sigma
 
 
 class Point:
@@ -212,6 +246,8 @@ class Point:
         self.r, self.phi = cordinates
         self.V = V_params
         self.J = J_params
+        self.sigma = None
+        self.dot_q = None
 
     def update_voltage(self, neighbours):
         return np.sum(self.V['coeffs'] * neighbours)

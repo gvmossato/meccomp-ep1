@@ -49,6 +49,12 @@ plate.apply_liebmman_for(1.75, 0.001)
 
 #plate.plot('voltage')
 
-plate.calculate('J')
+plate.calculate('J', J.materials_colormap)
 
-plate.plot('J')
+plate.calculate('dot_q', J.materials_colormap)
+
+print(plate.get_prop('dot_q'))
+
+#plate.plot('J')
+
+plate.plot('dot_q')

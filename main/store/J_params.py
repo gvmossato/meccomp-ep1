@@ -133,3 +133,14 @@ phi_colors = [
     "#0000FF", # Azul
     "#A7A7A7"  # Cinza
 ]
+
+# ========= #
+# Materiais #
+# ========= #
+
+materials_colormap = {
+    "#9000FF" : 1.0, # Roxo
+    "#FF6000" : 0.5, # Laranja
+    "#0000FF" : 1.0, # Azul
+    "#A7A7A7" : 0.5  # Cinza
+}
