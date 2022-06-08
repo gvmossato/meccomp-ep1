@@ -1,5 +1,6 @@
 import numpy as np
 import plotly.graph_objs as go
+import plotly.figure_factory as ff
 
 
 class Plate:
@@ -94,6 +95,14 @@ class Plate:
             for point in self.meshgrid.ravel():
                 prop_matrix[point.i, point.j] = point.V['value']
 
+        elif prop == 'current_density':
+            prop_matrix1 = np.zeros(self.base_matrix.shape)
+            prop_matrix2 = np.zeros(self.base_matrix.shape)
+            for point in self.meshgrid.ravel():
+                prop_matrix1[point.i, point.j] = point.J[0]['value']
+                prop_matrix2[point.i, point.j] = point.J[1]['value']
+            return (prop_matrix1, prop_matrix2)
+
         else:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
         return prop_matrix
@@ -106,7 +115,18 @@ class Plate:
                 z = self.get_prop('voltage')
             )])
             fig.show()
-
+        else:
+            u, v = self.get_prop('current_density')
+            fig = ff.create_quiver(
+                self.x_grid,
+                self.y_grid,
+                u,
+                v,
+                scale=1e-6,
+                name='quiver',
+                line_width=1
+            )
+            fig.show()
 
     def plot_meshgrid(self, which):
         if which not in ['V', 'Jr', 'Jphi']:
@@ -151,6 +171,40 @@ class Plate:
         liebmann = Liebmann(self, lamb, max_error)
         self.meshgrid = liebmann.solve_for(which)
 
+    def calculate(self, which='J'):
+        n_rows = len(self.meshgrid)
+        n_cols = len(self.meshgrid[0])
+
+        for i in range(n_rows):
+            for j in range(n_cols):
+                neighbours_values  = []
+                neighbours_indexes = [(i, j-2), (i, j-1), (i, j), (i, j+1), (i, j+2)]
+
+                for row_idx, col_idx in neighbours_indexes:
+                    if col_idx <= -1 or col_idx >= n_cols:
+                        neighbours_values.append(0)
+                    else:
+                        neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
+
+                self.meshgrid[i, j].J[0]['value'] = self.meshgrid[i, j].update_Jr(np.array(neighbours_values))
+
+        for i in range(n_rows):
+            for j in range(n_cols):
+                neighbours_values  = []
+                neighbours_indexes = [(i+2, j), (i+1, j), (i, j), (i-1, j), (i-2, j)]
+
+                for row_idx, col_idx in neighbours_indexes:
+                    if row_idx == -2:
+                        neighbours_values.append(self.meshgrid[row_idx+4, col_idx].V['value'])
+                    elif row_idx == -1:
+                        neighbours_values.append(self.meshgrid[row_idx+2, col_idx].V['value'])
+                    elif row_idx >= n_rows:
+                        neighbours_values.append(0)
+                    else:
+                        neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
+
+                self.meshgrid[i, j].J[1]['value'] = self.meshgrid[i, j].update_Jphi(np.array(neighbours_values))
+
 
 class Point:
     def __init__(self, index, cordinates, V_params, J_params):
@@ -161,6 +215,12 @@ class Point:
 
     def update_voltage(self, neighbours):
         return np.sum(self.V['coeffs'] * neighbours)
+
+    def update_Jr(self, neighbours):
+        return np.sum(self.J[0]['coeffs'] * neighbours)
+
+    def update_Jphi(self, neighbours):
+        return np.sum(self.J[1]['coeffs'] * neighbours)
 
 
 class Liebmann:

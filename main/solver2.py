@@ -8,7 +8,7 @@ from src.lib2 import Plate
 r_range = [0.03, 0.11, 0.001]
 phi_range = [0.0, 40.0, 1.0]
 
-materials = [5e-1, 1]
+materials = [0.5, 1]
 
 voltage_params = {
     'regions' : V.regions,
@@ -41,12 +41,14 @@ plate = Plate(r_range, phi_range, params, materials)
 
 #plate.plot_meshgrid('V')
 
-#plate.plot_meshgrid('Jr')
+# plate.plot_meshgrid('Jr')
 
-#plate.plot_meshgrid('Jphi')
+# plate.plot_meshgrid('Jphi')
 
 plate.apply_liebmman_for(1.75, 0.001)
 
-plate.plot('voltage')
+#plate.plot('voltage')
 
+plate.calculate('J')
 
+plate.plot('J')

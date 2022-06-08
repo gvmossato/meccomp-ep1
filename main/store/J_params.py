@@ -18,44 +18,44 @@ r_coeffs = [
     lambda r, dr, dp, sa, sb: [ # Vermelho
         0.0,
         0.0,
-        -3*sa / (2*dr),
-        2*sa / dr,
-        -sa / (2*dr)
+        3*sa / (2*dr),
+        -2*sa / dr,
+        sa / (2*dr)
     ],
     lambda r, dr, dp, sa, sb: [ # Azul
         0.0,
         0.0,
-        -3*sb / (2*dr),
-        2*sb / dr,
-        -sb / (2*dr)
+        3*sb / (2*dr),
+        -2*sb / dr,
+        sb / (2*dr)
     ],
     lambda r, dr, dp, sa, sb: [ # Verde
-        sb / (2*dr),
-        -2*sb / dr,
-        3*sb / (2*dr),
+        -sb / (2*dr),
+        2*sb / dr,
+        -3*sb / (2*dr),
         0.0,
         0.0
     ],
     lambda r, dr, dp, sa, sb: [ # Rosa
-        sa / (2*dr),
-        -2*sa / dr,
-        3*sa / (2*dr),
+        -sa / (2*dr),
+        2*sa / dr,
+        -3*sa / (2*dr),
         0.0,
         0.0
     ],
     lambda r, dr, dp, sa, sb: [ # Roxo
-        0
-        -sb / (2*dr),
         0.0,
         sb / (2*dr),
         0.0,
+        -sb / (2*dr),
+        0.0
     ],
     lambda r, dr, dp, sa, sb: [ # Cinza
-        0
-        -sa / (2*dr),
         0.0,
         sa / (2*dr),
         0.0,
+        -sa / (2*dr),
+        0.0
     ]
 ]
 
@@ -91,47 +91,45 @@ phi_regions[:, -2:] = np.deg2rad(phi_regions[:, -2:])
 
 phi_coeffs = [
     lambda r, dr, dp, sa, sb: [ # Roxo
-        sb / (2*dp*r),
-        -2*sb / (dp*r),
-        3*sb / (2*dp*r),
         0.0,
-        0.0
+        0.0,
+        -3*sb / (2*dp*r),
+        2*sb / (dp*r),
+        -sb / (2*dp*r)
     ],
     lambda r, dr, dp, sa, sb: [ # Laranja
-        sa / (2*dp*r),
-        -2*sa / (dp*r),
-        3*sa / (2*dp*r),
         0.0,
-        0.0
+        0.0,
+        -3*sa / (2*dp*r),
+        2*sa / (dp*r),
+        -sa / (2*dp*r)
     ],
     lambda r, dr, dp, sa, sb: [ # Azul
-        0
+        0.0,
         -sb / (2*dp*r),
         0.0,
         sb / (2*dp*r),
-        0.0,
+        0.0
     ],
     lambda r, dr, dp, sa, sb: [ # Cinza
-        0
+        0.0,
         -sa / (2*dp*r),
         0.0,
         sa / (2*dp*r),
-        0.0,
+        0.0
     ]
 ]
 
 phi_initial = [
-    0.0, # Vermelho
-    0.0, # Azul
-    0.0, # Verde
-    0.0, # Rosa
     0.0, # Roxo
+    0.0, # Laranja
+    0.0, # Azul
     0.0  # Cinza
 ]
 
 phi_colors = [
-    "#FF6000", # Laranja
     "#9000FF", # Roxo
+    "#FF6000", # Laranja
     "#0000FF", # Azul
     "#A7A7A7"  # Cinza
 ]
