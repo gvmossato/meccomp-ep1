@@ -7,6 +7,7 @@ class Plate:
     def __init__(self, r_range, phi_range, params, materials):
         self.V_params = params['voltage']
         self.J_params = params['current_density']
+        self.T_params = params['temperature']
         self.materials = materials
 
         self.h_r, self.h_phi, self.r_vals, self.phi_vals = self._gen_ranges(r_range, phi_range)
@@ -67,12 +68,14 @@ class Plate:
                 V_params_point = self._get_point_params(r, phi, self.V_params)
                 Jr_params_point = self._get_point_params(r, phi, self.J_params[0])
                 Jphi_params_point = self._get_point_params(r, phi, self.J_params[1])
+                T_params_point = self._get_point_params(r, phi, self.T_params)
 
                 meshgrid[i, j]  = Point(
                     (i, j),
                     (r, phi),
                     V_params_point,
-                    (Jr_params_point, Jphi_params_point)
+                    (Jr_params_point, Jphi_params_point),
+                    T_params_point
                 )
         return x_grid, y_grid, meshgrid
 
@@ -94,6 +97,10 @@ class Plate:
         elif prop == 'voltage':
             for point in self.meshgrid.ravel():
                 prop_matrix[point.i, point.j] = point.V['value']
+
+        elif prop == 'temperature':
+            for point in self.meshgrid.ravel():
+                prop_matrix[point.i, point.j] = point.T['value']
 
         elif prop == 'current_density':
             prop_matrix1 = np.zeros(self.base_matrix.shape)
@@ -148,6 +155,13 @@ class Plate:
                 z = self.get_prop('dot_q')
             )])
             fig.show()
+        elif which == 'temperature':
+            fig = go.Figure(data = [go.Surface(
+                x = self.x_grid,
+                y = self.y_grid,
+                z = self.get_prop('temperature')
+            )])
+            fig.show()
 
     def plot_meshgrid(self, which):
         if which not in ['V', 'Jr', 'Jphi']:
@@ -188,14 +202,15 @@ class Plate:
         fig.show()
         return
 
-    def apply_liebmman_for(self, lamb, max_error, which='voltage'):
+    def apply_liebmman_for(self, which, lamb, max_error):
         liebmann = Liebmann(self, lamb, max_error)
         self.meshgrid = liebmann.solve_for(which)
 
     def _map_colors_to_points(self, materials_map):
         if materials_map:
             for point in self.meshgrid.ravel():
-                point.sigma = materials_map[point.J[1]['color']]
+                point.sigma = materials_map[point.J[1]['color']][0]
+                point.k = materials_map[point.J[1]['color']][1]
         return
 
     def calculate(self, which='J', materials_map=None):
@@ -238,16 +253,18 @@ class Plate:
         elif which == 'dot_q':
             for point in self.meshgrid.ravel():
                 point.dot_q = -(point.J[0]['value']**2 + point.J[1]['value']**2) / point.sigma
-
+                point.T['coeffs'][-1] -= point.dot_q / point.k
 
 class Point:
-    def __init__(self, index, cordinates, V_params, J_params):
+    def __init__(self, index, cordinates, V_params, J_params, T_params):
         self.i, self.j = index
         self.r, self.phi = cordinates
         self.V = V_params
         self.J = J_params
+        self.T = T_params
         self.sigma = None
         self.dot_q = None
+        self.k = None
 
     def update_voltage(self, neighbours):
         return np.sum(self.V['coeffs'] * neighbours)
@@ -257,6 +274,9 @@ class Point:
 
     def update_Jphi(self, neighbours):
         return np.sum(self.J[1]['coeffs'] * neighbours)
+
+    def update_temperature(self, neighbours):
+        return np.sum(self.T['coeffs'] * neighbours)
 
 
 class Liebmann:
@@ -269,41 +289,61 @@ class Liebmann:
     def _SOR(self, V_new, V_curr):
         return self.lamb * V_new + (1-self.lamb) * V_curr
 
-    def _next_step(self):
+    def _next_step(self, prop):
         meshgrid = self.plate.meshgrid
 
         n_rows = len(meshgrid)
         n_cols = len(meshgrid[0])
 
-        for i in range(n_rows):
-            for j in range(n_cols):
-                neighbours_values  = []
-                neighbours_indexes = [(i+1, j), (i, j+1), (i-1, j), (i, j-1)]
+        if prop == 'voltage':
+            for i in range(n_rows):
+                for j in range(n_cols):
+                    neighbours_values  = []
+                    neighbours_indexes = [(i+1, j), (i, j+1), (i-1, j), (i, j-1)]
 
-                for row_idx, col_idx in neighbours_indexes:
-                    if row_idx == -1:
-                        neighbours_values.append(meshgrid[row_idx+2, col_idx].V['value'])
-                    elif col_idx == -1 or row_idx == n_rows or col_idx == n_cols:
-                        neighbours_values.append(0)
-                    else:
-                        neighbours_values.append(meshgrid[row_idx, col_idx].V['value'])
+                    for row_idx, col_idx in neighbours_indexes:
+                        if row_idx == -1:
+                            neighbours_values.append(meshgrid[row_idx+2, col_idx].V['value'])
+                        elif col_idx == -1 or row_idx == n_rows or col_idx == n_cols:
+                            neighbours_values.append(0)
+                        else:
+                            neighbours_values.append(meshgrid[row_idx, col_idx].V['value'])
 
-                neighbours_values.append(1)
+                    neighbours_values.append(1)
 
-                V_new = meshgrid[i, j].update_voltage(np.array(neighbours_values))
-                meshgrid[i, j].V['value'] = self._SOR(V_new, meshgrid[i, j].V['value'])
+                    V_new = meshgrid[i, j].update_voltage(np.array(neighbours_values))
+                    meshgrid[i, j].V['value'] = self._SOR(V_new, meshgrid[i, j].V['value'])
+
+        elif prop == 'temperature':
+            for i in range(n_rows):
+                for j in range(n_cols):
+                    neighbours_values  = []
+                    neighbours_indexes = [(i+1, j), (i, j+1), (i-1, j), (i, j-1)]
+
+                    for row_idx, col_idx in neighbours_indexes:
+                        if row_idx == -1:
+                            neighbours_values.append(meshgrid[row_idx+2, col_idx].T['value'])
+                        elif col_idx == -1 or row_idx == n_rows or col_idx == n_cols:
+                            neighbours_values.append(0)
+                        else:
+                            neighbours_values.append(meshgrid[row_idx, col_idx].T['value'])
+
+                    neighbours_values.append(1)
+
+                    T_new = meshgrid[i, j].update_temperature(np.array(neighbours_values))
+                    meshgrid[i, j].T['value'] = self._SOR(T_new, meshgrid[i, j].T['value'])
 
     def _get_error(self, old, curr):
         return np.max(np.abs(curr - old) / (curr + np.finfo(float).tiny))
 
-    def solve_for(self, prop='voltage'):
+    def solve_for(self, prop):
         error = np.inf
 
         while error >= self.epsilon:
             self.step_count += 1
-            before = self.plate.get_prop('voltage')
-            self._next_step()
-            error = self._get_error(before, self.plate.get_prop('voltage'))
+            before = self.plate.get_prop(prop)
+            self._next_step(prop)
+            error = self._get_error(before, self.plate.get_prop(prop))
             print(f"Erro máximo: {error}                ", end='\r')
 
         print()

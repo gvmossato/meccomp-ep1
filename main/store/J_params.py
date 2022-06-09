@@ -15,42 +15,42 @@ r_regions = np.array([
 r_regions[:, -2:] = np.deg2rad(r_regions[:, -2:])
 
 r_coeffs = [
-    lambda r, dr, dp, sa, sb: [ # Vermelho
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Vermelho
         0.0,
         0.0,
         3*sa / (2*dr),
         -2*sa / dr,
         sa / (2*dr)
     ],
-    lambda r, dr, dp, sa, sb: [ # Azul
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Azul
         0.0,
         0.0,
         3*sb / (2*dr),
         -2*sb / dr,
         sb / (2*dr)
     ],
-    lambda r, dr, dp, sa, sb: [ # Verde
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Verde
         -sb / (2*dr),
         2*sb / dr,
         -3*sb / (2*dr),
         0.0,
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Rosa
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Rosa
         -sa / (2*dr),
         2*sa / dr,
         -3*sa / (2*dr),
         0.0,
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Roxo
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Roxo
         0.0,
         sb / (2*dr),
         0.0,
         -sb / (2*dr),
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Cinza
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Cinza
         0.0,
         sa / (2*dr),
         0.0,
@@ -90,28 +90,28 @@ phi_regions = np.array([
 phi_regions[:, -2:] = np.deg2rad(phi_regions[:, -2:])
 
 phi_coeffs = [
-    lambda r, dr, dp, sa, sb: [ # Roxo
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Roxo
         0.0,
         0.0,
         -3*sb / (2*dp*r),
         2*sb / (dp*r),
         -sb / (2*dp*r)
     ],
-    lambda r, dr, dp, sa, sb: [ # Laranja
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Laranja
         0.0,
         0.0,
         -3*sa / (2*dp*r),
         2*sa / (dp*r),
         -sa / (2*dp*r)
     ],
-    lambda r, dr, dp, sa, sb: [ # Azul
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Azul
         0.0,
         -sb / (2*dp*r),
         0.0,
         sb / (2*dp*r),
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Cinza
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Cinza
         0.0,
         -sa / (2*dp*r),
         0.0,
@@ -139,8 +139,8 @@ phi_colors = [
 # ========= #
 
 materials_colormap = {
-    "#9000FF" : 1.0, # Roxo
-    "#FF6000" : 0.5, # Laranja
-    "#0000FF" : 1.0, # Azul
-    "#A7A7A7" : 0.5  # Cinza
+    "#9000FF" : (1.0e-5, 500), # Roxo
+    "#FF6000" : (0.5e-5, 110), # Laranja
+    "#0000FF" : (1.0e-5, 110), # Azul
+    "#A7A7A7" : (0.5e-5, 500)  # Cinza
 }

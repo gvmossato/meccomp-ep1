@@ -13,49 +13,49 @@ regions = np.array([
 regions[:, -2:] = np.deg2rad(regions[:, -2:])
 
 coeffs = [
-    lambda r, dr, dp, sa, sb: [ # Vermelho
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Vermelho
         0.0,
         0.0,
         0.0,
         0.0,
         100.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Azul
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Azul
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
         ( dp**2 * sb * r**2 * (dr  + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sb-sa) + 2*r*(sa+sb)) ),
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
         ( dp**2 * sa * r**2 * (-dr + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sb-sa) + 2*r*(sa+sb)) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Verde
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Verde
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
         ( dp**2 * sa * r**2 * (dr  + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sa-sb) + 2*r*(sa+sb)) ),
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
         ( dp**2 * sb * r**2 * (-dr + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sa-sb) + 2*r*(sa+sb)) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Rosa
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Rosa
         0.0,
         0.0,
         0.0,
         0.0,
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Roxo
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Roxo
         ( dr**2 * sa ) / ( (sa+sb) * (dp**2 * r**2 + dr**2) ),
         ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         ( dr**2 * sb ) / ( (sa+sb) * (dp**2 * r**2 + dr**2) ),
         ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Laranja
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Laranja
         0.0,
         ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
         ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb: [ # Cinza
+    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Cinza
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
         ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
         ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
