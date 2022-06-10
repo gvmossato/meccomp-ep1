@@ -18,43 +18,43 @@ r_coeffs = [
     lambda P, p: [ # Vermelho
         0.0,
         0.0,
-        3*p.sa / (2*P.dr),
-        -2*p.sa / P.dr,
-        p.sa / (2*P.dr)
+        3*P.sa / (2*P.h_r),
+        -2*P.sa / P.h_r,
+        P.sa / (2*P.h_r)
     ],
     lambda P, p: [ # Azul
         0.0,
         0.0,
-        3*p.sb / (2*P.dr),
-        -2*p.sb / P.dr,
-        p.sb / (2*P.dr)
+        3*P.sb / (2*P.h_r),
+        -2*P.sb / P.h_r,
+        P.sb / (2*P.h_r)
     ],
     lambda P, p: [ # Verde
-        -p.sb / (2*P.dr),
-        2*p.sb / P.dr,
-        -3*p.sb / (2*P.dr),
+        -P.sb / (2*P.h_r),
+        2*P.sb / P.h_r,
+        -3*P.sb / (2*P.h_r),
         0.0,
         0.0
     ],
     lambda P, p: [ # Rosa
-        -p.sa / (2*P.dr),
-        2*p.sa / P.dr,
-        -3*p.sa / (2*P.dr),
+        -P.sa / (2*P.h_r),
+        2*P.sa / P.h_r,
+        -3*P.sa / (2*P.h_r),
         0.0,
         0.0
     ],
     lambda P, p: [ # Roxo
         0.0,
-        p.sb / (2*P.dr),
+        P.sb / (2*P.h_r),
         0.0,
-        -p.sb / (2*P.dr),
+        -P.sb / (2*P.h_r),
         0.0
     ],
     lambda P, p: [ # Cinza
         0.0,
-        p.sa / (2*P.dr),
+        P.sa / (2*P.h_r),
         0.0,
-        -p.sa / (2*P.dr),
+        -P.sa / (2*P.h_r),
         0.0
     ]
 ]
@@ -93,29 +93,29 @@ phi_coeffs = [
     lambda P, p: [ # Roxo
         0.0,
         0.0,
-        -3*p.sb / (2*P.dp*p.r),
-        2*p.sb / (P.dp*p.r),
-        -p.sb / (2*P.dp*p.r)
+        -3*P.sb / (2*P.h_phi*p.r),
+        2*P.sb / (P.h_phi*p.r),
+        -P.sb / (2*P.h_phi*p.r)
     ],
     lambda P, p: [ # Laranja
         0.0,
         0.0,
-        -3*p.sa / (2*P.dp*p.r),
-        2*p.sa / (P.dp*p.r),
-        -p.sa / (2*P.dp*p.r)
+        -3*P.sa / (2*P.h_phi*p.r),
+        2*P.sa / (P.h_phi*p.r),
+        -P.sa / (2*P.h_phi*p.r)
     ],
     lambda P, p: [ # Azul
         0.0,
-        -p.sb / (2*P.dp*p.r),
+        -P.sb / (2*P.h_phi*p.r),
         0.0,
-        p.sb / (2*P.dp*p.r),
+        P.sb / (2*P.h_phi*p.r),
         0.0
     ],
     lambda P, p: [ # Cinza
         0.0,
-        -p.sa / (2*P.dp*p.r),
+        -P.sa / (2*P.h_phi*p.r),
         0.0,
-        p.sa / (2*P.dp*p.r),
+        P.sa / (2*P.h_phi*p.r),
         0.0
     ]
 ]

@@ -4,26 +4,27 @@ import plotly.figure_factory as ff
 
 
 class Plate:
-    def __init__(self, r_range, phi_range, params, materials):
-        self.V_params = params['voltage']
-        self.J_params = params['current_density']
-        self.T_params = params['temperature']
+    def __init__(self, r_range, phi_range, params, props):
+        self.V_params = params['V']
+        self.J_params = params['J']
+        self.T_params = params['T']
+        self.M_params = params['M']
 
         self.h_r, self.h_phi, self.r_vals, self.phi_vals = self._gen_ranges(r_range, phi_range)
+        self.n_i, self.n_j = len(self.phi_vals), len(self.r_vals)
         self.x_grid, self.y_grid, self.meshgrid = self._gen_grids()
-        self.n_i = len(self.phi_vals)
-        self.n_j = len(self.r_vals)
 
-        self._set_plate_props(materials)
+        self._set_plate_props(props)
         self._points_add_params({
+            'M'    : self.M_params,
             'V'    : self.V_params,
             'Jr'   : self.J_params[0],
             'Jphi' : self.J_params[1],
         })
 
-    def _set_plate_props(self, materials):
-        for key, value in materials.items():
-            eval(f"self.{key} = {value}")
+    def _set_plate_props(self, props):
+        for prop, value in props.items():
+            exec(f"self.{prop} = {value}")
 
     def _validate_step(self, h: float, contour_gcd: float):
         return contour_gcd / np.round(contour_gcd / h)
@@ -39,7 +40,7 @@ class Plate:
         phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+h_phi, h_phi))
         return h_r, np.deg2rad(h_phi), r_vals, phi_vals
 
-    def _get_point_params(self, point, params):
+    def _get_point_params(self, point, params, is_material=False):
         for i in range(len(params['regions'])):
             lower_r, upper_r, lower_phi, upper_phi = params['regions'][i]
 
@@ -53,16 +54,22 @@ class Plate:
             ]
 
             if np.any(r_tests) and np.any(phi_tests):
-                point_params = {
-                    'coeffs' : params['coeffs'][i](self, point),
-                    'value'  : params['initial'][i],
-                    'color'  : params['colors'][i]
-                }
+                if is_material:
+                    point_params = {
+                        'props'  : params['props'][i],
+                        'color'  : params['colors'][i]
+                    }
+                else:
+                    point_params = {
+                        'coeffs' : params['coeffs'][i](self, point),
+                        'value'  : params['initial'][i],
+                        'color'  : params['colors'][i]
+                    }
                 return point_params
         raise ValueError(f'Unable to assign params for {(point.r, point.phi)}')
 
     def _get_base_matrix(self, element):
-        return np.array([[element] * self.n_j] * self.n_i),
+        return np.array([[element] * self.n_j] * self.n_i)
 
     def _gen_grids(self):
         r_grid, phi_grid = np.meshgrid(self.r_vals, self.phi_vals)
@@ -71,21 +78,26 @@ class Plate:
 
         meshgrid = self._get_base_matrix(None)
         for i in range(self.n_i):
-            for j in range(len(self.n_j)):
-                meshgrid[i, j]  = Point((i, j), (self.r_vals[j], self.phi_vals[i]))
+            for j in range(self.n_j):
+                meshgrid[i, j] = Point((i, j), (self.r_vals[j], self.phi_vals[i]))
         return x_grid, y_grid, meshgrid
 
     def _points_add_params(self, map_params):
         for point in self.meshgrid.ravel():
             for name, params in map_params.items():
-                self.meshgrid[point.i, point.j] = point.set_param(
+                point.set_param(
                     name,
-                    self._get_point_params(point.r, point.phi, params)
+                    self._get_point_params(
+                        point,
+                        params,
+                        name == 'M'
+                    )
                 )
         return
 
     def get_prop(self, prop):
         map_props = {
+            'M_color'    : lambda p: p.M['color'],
             'V_color'    : lambda p: p.V['color'],
             'Jr_color'   : lambda p: p.J[0]['color'],
             'Jphi_color' : lambda p: p.J[1]['color'],
@@ -99,7 +111,7 @@ class Plate:
         if prop not in map_props:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
 
-        prop_matrix = self._get_base_matrix(0.0)
+        prop_matrix = self._get_base_matrix(None) if 'color' in prop else self._get_base_matrix(0.0)
         for point in self.meshgrid.ravel():
             prop_matrix[point.i, point.j] = map_props[prop](point)
         return prop_matrix
@@ -178,7 +190,7 @@ class Plate:
         fig.show()
 
     def plot_meshgrid(self, which):
-        if which not in ['V', 'Jr', 'Jphi']:
+        if which not in ['V', 'Jr', 'Jphi', 'M']:
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
         z_grid = np.zeros(self.x_grid.shape)
@@ -219,13 +231,6 @@ class Plate:
     def apply_liebmann_for(self, which, lamb, max_error):
         liebmann = Liebmann(self, lamb, max_error)
         self.meshgrid = liebmann.solve_for(which)
-
-    # def _map_colors_to_points(self, materials_map):
-    #     if materials_map:
-    #         for point in self.meshgrid.ravel():
-    #             point.sigma = materials_map[point.J[1]['color']][0]
-    #             point.k = materials_map[point.J[1]['color']][1]
-    #     return
 
     def calculate(self, prop):
         map_calcs = {
@@ -279,7 +284,7 @@ class Plate:
 
     def _calculate_dot_q(self):
         for point in self.meshgrid.ravel():
-            point.dot_q = -(point.get('Jr')**2 + point.get('Jphi')**2) / point.sigma
+            point.dot_q = -(point.get('Jr')**2 + point.get('Jphi')**2) / point.M['props']['sigma']
 
         self._points_add_params({'T' : self.T_params})
         return
@@ -290,12 +295,10 @@ class Point:
         self.r, self.phi = cordinates
 
         self.V = None
-        self.J = (None, None)
+        self.J = [None, None]
         self.T = None
 
         self.dot_q = np.nan
-        self.sigma = np.nan
-        self.k = np.nan
 
     def get(self, prop):
         map_props = {
@@ -331,6 +334,8 @@ class Point:
             self.J[0] = value
         elif param == 'Jphi':
             self.J[0] = value
+        elif param == 'M':
+            self.M = value
         else:
             raise ValueError(f"Unexpected value '{param}' passed to `param`")
         return

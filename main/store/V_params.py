@@ -21,17 +21,17 @@ coeffs = [
         100.0
     ],
     lambda P, p: [ # Azul
-        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.sb * p.r**2 * (P.dr  + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sb-p.sa) + 2*p.r*(p.sa+p.sb)) ),
-        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.sa * p.r**2 * (-P.dr + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sb-p.sa) + 2*p.r*(p.sa+p.sb)) ),
+        ( P.h_r**2 ) / ( 2*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * P.sb * p.r**2 * (P.h_r  + 2*p.r) ) / ( (P.h_phi**2 * p.r**2 + P.h_r**2) * (P.h_r * (P.sb-P.sa) + 2*p.r*(P.sa+P.sb)) ),
+        ( P.h_r**2 ) / ( 2*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * P.sa * p.r**2 * (-P.h_r + 2*p.r) ) / ( (P.h_phi**2 * p.r**2 + P.h_r**2) * (P.h_r * (P.sb-P.sa) + 2*p.r*(P.sa+P.sb)) ),
         0.0
     ],
     lambda P, p: [ # Verde
-        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.sa * p.r**2 * (P.dr  + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sa-p.sb) + 2*p.r*(p.sa+p.sb)) ),
-        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.sb * p.r**2 * (-P.dr + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sa-p.sb) + 2*p.r*(p.sa+p.sb)) ),
+        ( P.h_r**2 ) / ( 2*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * P.sa * p.r**2 * (P.h_r  + 2*p.r) ) / ( (P.h_phi**2 * p.r**2 + P.h_r**2) * (P.h_r * (P.sa-P.sb) + 2*p.r*(P.sa+P.sb)) ),
+        ( P.h_r**2 ) / ( 2*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * P.sb * p.r**2 * (-P.h_r + 2*p.r) ) / ( (P.h_phi**2 * p.r**2 + P.h_r**2) * (P.h_r * (P.sa-P.sb) + 2*p.r*(P.sa+P.sb)) ),
         0.0
     ],
     lambda P, p: [ # Rosa
@@ -42,24 +42,24 @@ coeffs = [
         0.0
     ],
     lambda P, p: [ # Roxo
-        ( P.dr**2 * p.sa ) / ( (p.sa+p.sb) * (P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.r * (P.dr  + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dr**2 * p.sb ) / ( (p.sa+p.sb) * (P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.r * (-P.dr + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.h_r**2 * P.sa ) / ( (P.sa+P.sb) * (P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * p.r * (P.h_r  + 2*p.r) ) / ( 4*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_r**2 * P.sb ) / ( (P.sa+P.sb) * (P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * p.r * (-P.h_r + 2*p.r) ) / ( 4*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
         0.0
     ],
     lambda P, p: [ # Laranja
         0.0,
-        ( P.dp**2 * p.r * (P.dr  + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dr**2 ) / ( P.dp**2 * p.r**2 + P.dr**2 ),
-        ( P.dp**2 * p.r * (-P.dr + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.h_phi**2 * p.r * (P.h_r  + 2*p.r) ) / ( 4*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_r**2 ) / ( P.h_phi**2 * p.r**2 + P.h_r**2 ),
+        ( P.h_phi**2 * p.r * (-P.h_r + 2*p.r) ) / ( 4*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
         0.0
     ],
     lambda P, p: [ # Cinza
-        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.r * (P.dr  + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
-        ( P.dp**2 * p.r * (-P.dr + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.h_r**2 ) / ( 2*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * p.r * (P.h_r  + 2*p.r) ) / ( 4*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_r**2 ) / ( 2*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
+        ( P.h_phi**2 * p.r * (-P.h_r + 2*p.r) ) / ( 4*(P.h_phi**2 * p.r**2 + P.h_r**2) ),
         0.0
     ]
 ]
