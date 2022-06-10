@@ -84,13 +84,13 @@ class Plate:
 
     def _points_add_params(self, map_params):
         for point in self.meshgrid.ravel():
-            for name, params in map_params.items():
+            for param_name, param_dict in map_params.items():
                 point.set_param(
-                    name,
+                    param_name,
                     self._get_point_params(
                         point,
-                        params,
-                        name == 'M'
+                        param_dict,
+                        param_name == 'M'
                     )
                 )
         return
@@ -333,7 +333,7 @@ class Point:
         elif param == 'Jr':
             self.J[0] = value
         elif param == 'Jphi':
-            self.J[0] = value
+            self.J[1] = value
         elif param == 'M':
             self.M = value
         else:

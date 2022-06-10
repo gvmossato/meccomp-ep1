@@ -63,15 +63,15 @@ params = {
 
 plate = Plate(r_range, phi_range, params, props)
 
-plate.plot_meshgrid('M')
+#plate.plot_meshgrid('M')
 
-# #plate.plot_meshgrid('V')
+#plate.plot_meshgrid('V')
 
-# #plate.plot_meshgrid('Jr')
+#plate.plot_meshgrid('Jr')
 
-# #plate.plot_meshgrid('Jphi')
+#plate.plot_meshgrid('Jphi')
 
-# plate.apply_liebmman_for('voltage', 1.75, 0.001)
+plate.apply_liebmann_for('V', 1.75, 0.001)
 
 # plate.plot('voltage')
 
