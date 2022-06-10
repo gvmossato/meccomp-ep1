@@ -136,7 +136,7 @@ class Plate:
         return fig, title, zlabel
 
     def _plot_J(self):
-        title = "Distribuição de Densidade de Corrente (A)"
+        title = "Densidade de Corrente (A/m²)"
         zlabel = ""
 
         fig = ff.create_quiver(
@@ -152,7 +152,7 @@ class Plate:
         return fig, title, zlabel
 
     def _plot_Q(self):
-        title = "Distribuição deo Fluxo de Calor ()"
+        title = "Fluxo de Calor (W/m²)"
         zlabel = ""
 
         fig = ff.create_quiver(
@@ -168,8 +168,8 @@ class Plate:
         return fig, title, zlabel
 
     def _plot_q_dot(self):
-        title = "Distribuição do Calor Gerado"
-        zlabel = "Calor (W/m²)"
+        title = "Distribuição do Calor"
+        zlabel = "Potência por volume (W/m³)"
 
         fig = go.Figure(data = [go.Surface(
             x = self._mirror_plot(self.x_grid, False),
@@ -264,7 +264,7 @@ class Plate:
 
     def _mirror_plot(self, grid, invert):
         sign = -1 if invert else 1
-        return np.vstack([np.flip(sign*grid), np.flip(grid, axis=1)])
+        return np.vstack([np.flip(sign*grid), np.flip(grid[1:], axis=1)])
 
     def apply_liebmann_for(self, which, lamb, max_error):
         liebmann = Liebmann(self, lamb, max_error)
