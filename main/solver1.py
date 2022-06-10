@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.lib1 import RK4, scale_plot
+from main.src.lib1 import RK4, scale_plot
 
 
 global Ra, La, Rb, Lb, C, e
