@@ -220,6 +220,13 @@ class Plate:
         liebmann = Liebmann(self, lamb, max_error)
         self.meshgrid = liebmann.solve_for(which)
 
+    # def _map_colors_to_points(self, materials_map):
+    #     if materials_map:
+    #         for point in self.meshgrid.ravel():
+    #             point.sigma = materials_map[point.J[1]['color']][0]
+    #             point.k = materials_map[point.J[1]['color']][1]
+    #     return
+
     def calculate(self, prop):
         map_calcs = {
             'J'     : lambda: [self._calculate_Jr(), self._calculate_Jphi()],
