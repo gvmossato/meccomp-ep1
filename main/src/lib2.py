@@ -8,37 +8,25 @@ class Plate:
         self.V_params = params['voltage']
         self.J_params = params['current_density']
         self.T_params = params['temperature']
-        self.materials = materials
 
         self.h_r, self.h_phi, self.r_vals, self.phi_vals = self._gen_ranges(r_range, phi_range)
-        self.base_matrix = self._gen_base_matrix(len(self.phi_vals), len(self.r_vals))
         self.x_grid, self.y_grid, self.meshgrid = self._gen_grids()
+        self.n_i = len(self.phi_vals)
+        self.n_j = len(self.r_vals)
+
+        self._set_plate_props(materials)
+        self._points_add_params({
+            'V'    : self.V_params,
+            'Jr'   : self.J_params[0],
+            'Jphi' : self.J_params[1],
+        })
+
+    def _set_plate_props(self, materials):
+        for key, value in materials.items():
+            eval(f"self.{key} = {value}")
 
     def _validate_step(self, h: float, contour_gcd: float):
         return contour_gcd / np.round(contour_gcd / h)
-
-    def _get_point_params(self, r, phi, params):
-        for i in range(len(params['regions'])):
-            lower_r, upper_r, lower_phi, upper_phi = params['regions'][i]
-
-            r_tests = [
-                lower_r <= r <= upper_r,
-                np.isclose(r, lower_r) or np.isclose(r, upper_r),
-            ]
-            phi_tests = [
-                lower_phi <= phi <= upper_phi,
-                np.isclose(phi, lower_phi) or np.isclose(phi, upper_phi)
-            ]
-
-            if np.any(r_tests) and np.any(phi_tests):
-                args = [r, self.h_r, self.h_phi, *self.materials]
-                point_params = {
-                    'coeffs' : params['coeffs'][i](*args),
-                    'value'  : params['initial'][i],
-                    'color'  : params['colors'][i]
-                }
-                return point_params
-        raise ValueError(f'Unable to assign params for {(r, phi)}')
 
     def _gen_ranges(self, r_range, phi_range):
         r_start, r_stop, r_step = r_range
@@ -51,125 +39,151 @@ class Plate:
         phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+h_phi, h_phi))
         return h_r, np.deg2rad(h_phi), r_vals, phi_vals
 
-    def _gen_base_matrix(self, n_i, n_j):
-        return np.array([[None] * n_j] * n_i)
+    def _get_point_params(self, point, params):
+        for i in range(len(params['regions'])):
+            lower_r, upper_r, lower_phi, upper_phi = params['regions'][i]
+
+            r_tests = [
+                lower_r <= point.r <= upper_r,
+                np.isclose(point.r, lower_r) or np.isclose(point.r, upper_r),
+            ]
+            phi_tests = [
+                lower_phi <= point.phi <= upper_phi,
+                np.isclose(point.phi, lower_phi) or np.isclose(point.phi, upper_phi)
+            ]
+
+            if np.any(r_tests) and np.any(phi_tests):
+                point_params = {
+                    'coeffs' : params['coeffs'][i](self, point),
+                    'value'  : params['initial'][i],
+                    'color'  : params['colors'][i]
+                }
+                return point_params
+        raise ValueError(f'Unable to assign params for {(point.r, point.phi)}')
+
+    def _get_base_matrix(self, element):
+        return np.array([[element] * self.n_j] * self.n_i),
 
     def _gen_grids(self):
         r_grid, phi_grid = np.meshgrid(self.r_vals, self.phi_vals)
         x_grid = r_grid * np.cos(phi_grid)
         y_grid = r_grid * np.sin(phi_grid)
 
-        meshgrid = np.copy(self.base_matrix)
-        for j in range(len(self.r_vals)):
-            r = self.r_vals[j]
-            for i in range(len(self.phi_vals)):
-                phi = self.phi_vals[i]
-
-                V_params_point = self._get_point_params(r, phi, self.V_params)
-                Jr_params_point = self._get_point_params(r, phi, self.J_params[0])
-                Jphi_params_point = self._get_point_params(r, phi, self.J_params[1])
-                T_params_point = self._get_point_params(r, phi, self.T_params)
-
-                meshgrid[i, j]  = Point(
-                    (i, j),
-                    (r, phi),
-                    V_params_point,
-                    (Jr_params_point, Jphi_params_point),
-                    T_params_point
-                )
+        meshgrid = self._get_base_matrix(None)
+        for i in range(self.n_i):
+            for j in range(len(self.n_j)):
+                meshgrid[i, j]  = Point((i, j), (self.r_vals[j], self.phi_vals[i]))
         return x_grid, y_grid, meshgrid
 
+    def _points_add_params(self, map_params):
+        for point in self.meshgrid.ravel():
+            for name, params in map_params.items():
+                self.meshgrid[point.i, point.j] = point.set_param(
+                    name,
+                    self._get_point_params(point.r, point.phi, params)
+                )
+        return
+
     def get_prop(self, prop):
-        prop_matrix = np.copy(self.base_matrix)
+        map_props = {
+            'V_color'    : lambda p: p.V['color'],
+            'Jr_color'   : lambda p: p.J[0]['color'],
+            'Jphi_color' : lambda p: p.J[1]['color'],
+            'V'          : lambda p: p.V['value'],
+            'T'          : lambda p: p.T['value'],
+            'Jr'         : lambda p: p.J[0]['value'],
+            'Jphi'       : lambda p: p.J[1]['value'],
+            'dot_q'      : lambda p: p.dot_q
+        }
 
-        if prop == 'V_color':
-            for point in self.meshgrid.ravel():
-                prop_matrix[point.i, point.j] = point.V['color']
-
-        elif prop == 'Jr_color':
-            for point in self.meshgrid.ravel():
-                prop_matrix[point.i, point.j] = point.J[0]['color']
-
-        elif prop == 'Jphi_color':
-            for point in self.meshgrid.ravel():
-                prop_matrix[point.i, point.j] = point.J[1]['color']
-
-        elif prop == 'voltage':
-            for point in self.meshgrid.ravel():
-                prop_matrix[point.i, point.j] = point.V['value']
-
-        elif prop == 'temperature':
-            for point in self.meshgrid.ravel():
-                prop_matrix[point.i, point.j] = point.T['value']
-
-        elif prop == 'current_density':
-            prop_matrix1 = np.zeros(self.base_matrix.shape)
-            prop_matrix2 = np.zeros(self.base_matrix.shape)
-            for point in self.meshgrid.ravel():
-                prop_matrix1[point.i, point.j] = point.J[0]['value']
-                prop_matrix2[point.i, point.j] = point.J[1]['value']
-            return (prop_matrix1, prop_matrix2)
-
-        elif prop == 'dot_q':
-            for point in self.meshgrid.ravel():
-                prop_matrix[point.i, point.j] = point.dot_q
-
-        else:
+        if prop not in map_props:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+
+        prop_matrix = self._get_base_matrix(0.0)
+        for point in self.meshgrid.ravel():
+            prop_matrix[point.i, point.j] = map_props[prop](point)
         return prop_matrix
 
+    def _plot_V(self):
+        title = "Distribuição de Tensão Elétrica"
+        zlabel = "Tensão (V)"
+        color = ""
+
+        fig = go.Figure(data = [go.Surface(
+            x = self.x_grid,
+            y = self.y_grid,
+            z = self.get_prop('V')
+        )])
+        return fig, title, zlabel, color
+
+    def _plot_J(self):
+        title = "Distribuição de Densidade de Corrente (A)"
+        zlabel = ""
+        color = ""
+
+        fig = ff.create_quiver(
+            self.x_grid,
+            self.y_grid,
+            self.get_prop('Jr'),
+            self.get_prop('Jphi'),
+            scale=1e-6,
+            name='quiver',
+            line_width=1
+        )
+        return fig, title, zlabel, color
+
+    def _plot_q_dot(self):
+        title = "Distribuição do Calor Gerado"
+        zlabel = "Calor (W/m²)"
+        color = ""
+
+        fig = go.Figure(data = [go.Surface(
+            x = self.x_grid,
+            y = self.y_grid,
+            z = self.get_prop('q_dot')
+        )])
+        return fig, title, zlabel, color
+
+    def _plot_T(self):
+        title = "Distribuição de Temperatura"
+        zlabel = "Temperatura (K)"
+        color = ""
+
+        fig = go.Figure(data = [go.Surface(
+            x = self.x_grid,
+            y = self.y_grid,
+            z = self.get_prop('V')
+        )])
+        return fig, title, zlabel, color
+
     def plot(self, which):
-        if which == 'voltage':
-            fig = go.Figure(data = [go.Surface(
-                x = self.x_grid,
-                y = self.y_grid,
-                z = self.get_prop('voltage')
-            )])
-            fig.show()
-        elif which == 'J':
-            u, v = self.get_prop('current_density')
-            fig = ff.create_quiver(
-                self.x_grid,
-                self.y_grid,
-                u,
-                v,
-                scale=1e-6,
-                name='quiver',
-                line_width=1
-            )
-            fig.show()
+        map_plots = {
+            'V'     : lambda: self._plot_V(),
+            'J'     : lambda: self._plot_J(),
+            'q_dot' : lambda: self._plot_q_dot(),
+            'T'     : lambda: self._plot_T(),
+        }
 
-            # import matplotlib.pyplot as plt
-            # plt.quiver(
-            #     self.x_grid,
-            #     self.y_grid,
-            #     u,
-            #     v,
+        if which not in map_plots:
+            raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
-            # )
-            # plt.show()
-        elif which == 'dot_q':
-            fig = go.Figure(data = [go.Surface(
-                x = self.x_grid,
-                y = self.y_grid,
-                z = self.get_prop('dot_q')
-            )])
-            fig.show()
-        elif which == 'temperature':
-            fig = go.Figure(data = [go.Surface(
-                x = self.x_grid,
-                y = self.y_grid,
-                z = self.get_prop('temperature')
-            )])
-            fig.show()
+        fig, title, zlabel, color = map_plots[which]()
+        fig.update_layout(
+            title = title,
+            xaxis_title = "x (m)",
+            yaxis_title = "y (m)",
+            zaxis_title = zlabel,
+            showlegend = False
+        )
+        fig.show()
 
     def plot_meshgrid(self, which):
         if which not in ['V', 'Jr', 'Jphi']:
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
         z_grid = np.zeros(self.x_grid.shape)
-        plot_data = []
 
+        plot_data = []
         plot_data.append(
             go.Scatter3d(
                 x = self.x_grid.ravel(),
@@ -202,81 +216,129 @@ class Plate:
         fig.show()
         return
 
-    def apply_liebmman_for(self, which, lamb, max_error):
+    def apply_liebmann_for(self, which, lamb, max_error):
         liebmann = Liebmann(self, lamb, max_error)
         self.meshgrid = liebmann.solve_for(which)
 
-    def _map_colors_to_points(self, materials_map):
-        if materials_map:
-            for point in self.meshgrid.ravel():
-                point.sigma = materials_map[point.J[1]['color']][0]
-                point.k = materials_map[point.J[1]['color']][1]
+    def calculate(self, prop):
+        map_calcs = {
+            'J'     : lambda: [self._calculate_Jr(), self._calculate_Jphi()],
+            'dot_q' : lambda: self._calculate_dot_q()
+        }
+
+        if prop not in map_calcs:
+            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+        return map_calcs[prop]
+
+    def _calculate_Jr(self):
+        for i in range(self.n_i):
+            for j in range(self.n_j):
+                neighbours_vals = []
+                neighbours_idxs = [(i, j-2), (i, j-1), (i, j), (i, j+1), (i, j+2)]
+
+                for row_idx, col_idx in neighbours_idxs:
+                    if col_idx <= -1 or col_idx >= self.n_j:
+                        neighbours_vals.append(0)
+                    else:
+                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get('V'))
+
+                self.meshgrid[i, j].set(
+                    'Jr',
+                    self.meshgrid[i, j].update('Jr', neighbours_vals)
+                )
         return
 
-    def calculate(self, which='J', materials_map=None):
-        n_rows = len(self.meshgrid)
-        n_cols = len(self.meshgrid[0])
+    def _calculate_Jphi(self):
+        for i in range(self.n_i):
+            for j in range(self.n_j):
+                neighbours_vals = []
+                neighbours_idxs = [(i+2, j), (i+1, j), (i, j), (i-1, j), (i-2, j)]
 
-        if which == 'J':
-            self._map_colors_to_points(materials_map)
+                for row_idx, col_idx in neighbours_idxs:
+                    if row_idx == -2:
+                        neighbours_vals.append(self.meshgrid[row_idx+4, col_idx].get('V'))
+                    elif row_idx == -1:
+                        neighbours_vals.append(self.meshgrid[row_idx+2, col_idx].get('V'))
+                    elif row_idx >= self.n_i:
+                        neighbours_vals.append(0)
+                    else:
+                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get('V'))
 
-            for i in range(n_rows):
-                for j in range(n_cols):
-                    neighbours_values  = []
-                    neighbours_indexes = [(i, j-2), (i, j-1), (i, j), (i, j+1), (i, j+2)]
+                self.meshgrid[i, j].set(
+                    'Jphi',
+                    self.meshgrid[i, j].update('Jphi', neighbours_vals)
+                )
+        return
 
-                    for row_idx, col_idx in neighbours_indexes:
-                        if col_idx <= -1 or col_idx >= n_cols:
-                            neighbours_values.append(0)
-                        else:
-                            neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
+    def _calculate_dot_q(self):
+        for point in self.meshgrid.ravel():
+            point.dot_q = -(point.get('Jr')**2 + point.get('Jphi')**2) / point.sigma
 
-                    self.meshgrid[i, j].J[0]['value'] = self.meshgrid[i, j].update_Jr(np.array(neighbours_values))
-
-            for i in range(n_rows):
-                for j in range(n_cols):
-                    neighbours_values  = []
-                    neighbours_indexes = [(i+2, j), (i+1, j), (i, j), (i-1, j), (i-2, j)]
-
-                    for row_idx, col_idx in neighbours_indexes:
-                        if row_idx == -2:
-                            neighbours_values.append(self.meshgrid[row_idx+4, col_idx].V['value'])
-                        elif row_idx == -1:
-                            neighbours_values.append(self.meshgrid[row_idx+2, col_idx].V['value'])
-                        elif row_idx >= n_rows:
-                            neighbours_values.append(0)
-                        else:
-                            neighbours_values.append(self.meshgrid[row_idx, col_idx].V['value'])
-
-                    self.meshgrid[i, j].J[1]['value'] = self.meshgrid[i, j].update_Jphi(np.array(neighbours_values))
-
-        elif which == 'dot_q':
-            for point in self.meshgrid.ravel():
-                point.dot_q = -(point.J[0]['value']**2 + point.J[1]['value']**2) / point.sigma
-                point.T['coeffs'][-1] -= point.dot_q / point.k
+        self._points_add_params({'T' : self.T_params})
+        return
 
 class Point:
-    def __init__(self, index, cordinates, V_params, J_params, T_params):
+    def __init__(self, index, cordinates):
         self.i, self.j = index
         self.r, self.phi = cordinates
-        self.V = V_params
-        self.J = J_params
-        self.T = T_params
-        self.sigma = None
-        self.dot_q = None
-        self.k = None
 
-    def update_voltage(self, neighbours):
-        return np.sum(self.V['coeffs'] * neighbours)
+        self.V = None
+        self.J = (None, None)
+        self.T = None
 
-    def update_Jr(self, neighbours):
-        return np.sum(self.J[0]['coeffs'] * neighbours)
+        self.dot_q = np.nan
+        self.sigma = np.nan
+        self.k = np.nan
 
-    def update_Jphi(self, neighbours):
-        return np.sum(self.J[1]['coeffs'] * neighbours)
+    def get(self, prop):
+        map_props = {
+            'V'    : self.V['value'],
+            'Jr'   : self.J[0]['value'],
+            'Jphi' : self.J[1]['value'],
+            'T'    : self.T['value']
+        }
 
-    def update_temperature(self, neighbours):
-        return np.sum(self.T['coeffs'] * neighbours)
+        if prop not in map_props:
+            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+        return map_props[prop]
+
+    def set(self, prop, value):
+        if prop == 'V':
+            self.V['value'] = value
+        elif prop == 'T':
+            self.T['value'] = value
+        elif prop == 'Jr':
+            self.J[0]['value'] = value
+        elif prop == 'Jphi':
+            self.J[1]['value'] = value
+        else:
+            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+        return
+
+    def set_param(self, param, value):
+        if param == 'V':
+            self.V = value
+        elif param == 'T':
+            self.T = value
+        elif param == 'Jr':
+            self.J[0] = value
+        elif param == 'Jphi':
+            self.J[0] = value
+        else:
+            raise ValueError(f"Unexpected value '{param}' passed to `param`")
+        return
+
+    def update_and_get(self, prop, neighbours):
+        map_props = {
+            'V'    : lambda neigh: np.sum(self.V['coeffs'] * neigh),
+            'T'    : lambda neigh: np.sum(self.T['coeffs'] * neigh),
+            'Jr'   : lambda neigh: np.sum(self.J[0]['coeffs'] * neigh),
+            'Jphi' : lambda neigh: np.sum(self.J[1]['coeffs'] * neigh)
+        }
+
+        if prop not in map_props:
+            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+        return map_props[prop](np.array(neighbours))
 
 
 class Liebmann:
@@ -295,43 +357,25 @@ class Liebmann:
         n_rows = len(meshgrid)
         n_cols = len(meshgrid[0])
 
-        if prop == 'voltage':
-            for i in range(n_rows):
-                for j in range(n_cols):
-                    neighbours_values  = []
-                    neighbours_indexes = [(i+1, j), (i, j+1), (i-1, j), (i, j-1)]
+        for i in range(n_rows):
+            for j in range(n_cols):
+                neighbours_vals  = []
+                neighbours_idxs = [(i+1, j), (i, j+1), (i-1, j), (i, j-1)]
 
-                    for row_idx, col_idx in neighbours_indexes:
-                        if row_idx == -1:
-                            neighbours_values.append(meshgrid[row_idx+2, col_idx].V['value'])
-                        elif col_idx == -1 or row_idx == n_rows or col_idx == n_cols:
-                            neighbours_values.append(0)
-                        else:
-                            neighbours_values.append(meshgrid[row_idx, col_idx].V['value'])
+                for row_idx, col_idx in neighbours_idxs:
+                    if row_idx == -1:
+                        neighbours_vals.append(meshgrid[row_idx+2, col_idx].get(prop))
+                    elif col_idx == -1 or row_idx == n_rows or col_idx == n_cols:
+                        neighbours_vals.append(0)
+                    else:
+                        neighbours_vals.append(meshgrid[row_idx, col_idx].get(prop))
 
-                    neighbours_values.append(1)
+                neighbours_vals.append(1)
 
-                    V_new = meshgrid[i, j].update_voltage(np.array(neighbours_values))
-                    meshgrid[i, j].V['value'] = self._SOR(V_new, meshgrid[i, j].V['value'])
-
-        elif prop == 'temperature':
-            for i in range(n_rows):
-                for j in range(n_cols):
-                    neighbours_values  = []
-                    neighbours_indexes = [(i+1, j), (i, j+1), (i-1, j), (i, j-1)]
-
-                    for row_idx, col_idx in neighbours_indexes:
-                        if row_idx == -1:
-                            neighbours_values.append(meshgrid[row_idx+2, col_idx].T['value'])
-                        elif col_idx == -1 or row_idx == n_rows or col_idx == n_cols:
-                            neighbours_values.append(0)
-                        else:
-                            neighbours_values.append(meshgrid[row_idx, col_idx].T['value'])
-
-                    neighbours_values.append(1)
-
-                    T_new = meshgrid[i, j].update_temperature(np.array(neighbours_values))
-                    meshgrid[i, j].T['value'] = self._SOR(T_new, meshgrid[i, j].T['value'])
+                prop_updated_val = meshgrid[i, j].update_and_get(prop, np.array(neighbours_vals))
+                prop_new_val = self._SOR(prop_updated_val, meshgrid[i, j].get(prop))
+                meshgrid[i, j].set(prop, prop_new_val)
+        return
 
     def _get_error(self, old, curr):
         return np.max(np.abs(curr - old) / (curr + np.finfo(float).tiny))

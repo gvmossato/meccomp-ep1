@@ -15,46 +15,46 @@ r_regions = np.array([
 r_regions[:, -2:] = np.deg2rad(r_regions[:, -2:])
 
 r_coeffs = [
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Vermelho
+    lambda P, p: [ # Vermelho
         0.0,
         0.0,
-        3*sa / (2*dr),
-        -2*sa / dr,
-        sa / (2*dr)
+        3*p.sa / (2*P.dr),
+        -2*p.sa / P.dr,
+        p.sa / (2*P.dr)
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Azul
+    lambda P, p: [ # Azul
         0.0,
         0.0,
-        3*sb / (2*dr),
-        -2*sb / dr,
-        sb / (2*dr)
+        3*p.sb / (2*P.dr),
+        -2*p.sb / P.dr,
+        p.sb / (2*P.dr)
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Verde
-        -sb / (2*dr),
-        2*sb / dr,
-        -3*sb / (2*dr),
+    lambda P, p: [ # Verde
+        -p.sb / (2*P.dr),
+        2*p.sb / P.dr,
+        -3*p.sb / (2*P.dr),
         0.0,
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Rosa
-        -sa / (2*dr),
-        2*sa / dr,
-        -3*sa / (2*dr),
+    lambda P, p: [ # Rosa
+        -p.sa / (2*P.dr),
+        2*p.sa / P.dr,
+        -3*p.sa / (2*P.dr),
         0.0,
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Roxo
+    lambda P, p: [ # Roxo
         0.0,
-        sb / (2*dr),
+        p.sb / (2*P.dr),
         0.0,
-        -sb / (2*dr),
+        -p.sb / (2*P.dr),
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Cinza
+    lambda P, p: [ # Cinza
         0.0,
-        sa / (2*dr),
+        p.sa / (2*P.dr),
         0.0,
-        -sa / (2*dr),
+        -p.sa / (2*P.dr),
         0.0
     ]
 ]
@@ -90,32 +90,32 @@ phi_regions = np.array([
 phi_regions[:, -2:] = np.deg2rad(phi_regions[:, -2:])
 
 phi_coeffs = [
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Roxo
+    lambda P, p: [ # Roxo
         0.0,
         0.0,
-        -3*sb / (2*dp*r),
-        2*sb / (dp*r),
-        -sb / (2*dp*r)
+        -3*p.sb / (2*P.dp*p.r),
+        2*p.sb / (P.dp*p.r),
+        -p.sb / (2*P.dp*p.r)
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Laranja
+    lambda P, p: [ # Laranja
         0.0,
         0.0,
-        -3*sa / (2*dp*r),
-        2*sa / (dp*r),
-        -sa / (2*dp*r)
+        -3*p.sa / (2*P.dp*p.r),
+        2*p.sa / (P.dp*p.r),
+        -p.sa / (2*P.dp*p.r)
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Azul
+    lambda P, p: [ # Azul
         0.0,
-        -sb / (2*dp*r),
+        -p.sb / (2*P.dp*p.r),
         0.0,
-        sb / (2*dp*r),
+        p.sb / (2*P.dp*p.r),
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Cinza
+    lambda P, p: [ # Cinza
         0.0,
-        -sa / (2*dp*r),
+        -p.sa / (2*P.dp*p.r),
         0.0,
-        sa / (2*dp*r),
+        p.sa / (2*P.dp*p.r),
         0.0
     ]
 ]

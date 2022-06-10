@@ -13,53 +13,53 @@ regions = np.array([
 regions[:, -2:] = np.deg2rad(regions[:, -2:])
 
 coeffs = [
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Vermelho
+    lambda P, p: [ # Vermelho
         0.0,
         0.0,
         0.0,
         0.0,
         100.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Azul
-        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
-        ( dp**2 * sb * r**2 * (dr  + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sb-sa) + 2*r*(sa+sb)) ),
-        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
-        ( dp**2 * sa * r**2 * (-dr + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sb-sa) + 2*r*(sa+sb)) ),
+    lambda P, p: [ # Azul
+        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.sb * p.r**2 * (P.dr  + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sb-p.sa) + 2*p.r*(p.sa+p.sb)) ),
+        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.sa * p.r**2 * (-P.dr + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sb-p.sa) + 2*p.r*(p.sa+p.sb)) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Verde
-        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
-        ( dp**2 * sa * r**2 * (dr  + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sa-sb) + 2*r*(sa+sb)) ),
-        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
-        ( dp**2 * sb * r**2 * (-dr + 2*r) ) / ( (dp**2 * r**2 + dr**2) * (dr * (sa-sb) + 2*r*(sa+sb)) ),
+    lambda P, p: [ # Verde
+        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.sa * p.r**2 * (P.dr  + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sa-p.sb) + 2*p.r*(p.sa+p.sb)) ),
+        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.sb * p.r**2 * (-P.dr + 2*p.r) ) / ( (P.dp**2 * p.r**2 + P.dr**2) * (P.dr * (p.sa-p.sb) + 2*p.r*(p.sa+p.sb)) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Rosa
+    lambda P, p: [ # Rosa
         0.0,
         0.0,
         0.0,
         0.0,
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Roxo
-        ( dr**2 * sa ) / ( (sa+sb) * (dp**2 * r**2 + dr**2) ),
-        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
-        ( dr**2 * sb ) / ( (sa+sb) * (dp**2 * r**2 + dr**2) ),
-        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+    lambda P, p: [ # Roxo
+        ( P.dr**2 * p.sa ) / ( (p.sa+p.sb) * (P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.r * (P.dr  + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dr**2 * p.sb ) / ( (p.sa+p.sb) * (P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.r * (-P.dr + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Laranja
+    lambda P, p: [ # Laranja
         0.0,
-        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
-        ( dr**2 ) / ( dp**2 * r**2 + dr**2 ),
-        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+        ( P.dp**2 * p.r * (P.dr  + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dr**2 ) / ( P.dp**2 * p.r**2 + P.dr**2 ),
+        ( P.dp**2 * p.r * (-P.dr + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
         0.0
     ],
-    lambda r, dr, dp, sa, sb, ka, kb, dotq, Tamb: [ # Cinza
-        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
-        ( dp**2 * r * (dr  + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
-        ( dr**2 ) / ( 2*(dp**2 * r**2 + dr**2) ),
-        ( dp**2 * r * (-dr + 2*r) ) / ( 4*(dp**2 * r**2 + dr**2) ),
+    lambda P, p: [ # Cinza
+        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.r * (P.dr  + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dr**2 ) / ( 2*(P.dp**2 * p.r**2 + P.dr**2) ),
+        ( P.dp**2 * p.r * (-P.dr + 2*p.r) ) / ( 4*(P.dp**2 * p.r**2 + P.dr**2) ),
         0.0
     ]
 ]
