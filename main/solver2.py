@@ -1,4 +1,3 @@
-import numpy as np
 import store.M_params as M
 import store.V_params as V
 import store.J_params as J
