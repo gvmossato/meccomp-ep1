@@ -15,7 +15,7 @@ props = {
     'sb'   : 1e-5,
     'ka'   : 110.0,
     'kb'   : 500.0,
-    'Tamb' : 303.0,
+    'Tamb' : 298.0,
     'h'    : 50.0
 }
 
@@ -63,6 +63,8 @@ params = {
 
 plate = Plate(r_range, phi_range, params, props)
 
+print('Meshgrid inicializada!')
+
 #plate.plot_meshgrid('M')
 
 #plate.plot_meshgrid('V')
@@ -71,18 +73,30 @@ plate = Plate(r_range, phi_range, params, props)
 
 #plate.plot_meshgrid('Jphi')
 
+#print('Meshgrids plotadas!')
+
 plate.apply_liebmann_for('V', 1.75, 0.001)
 
-# plate.plot('voltage')
+print('Tensão calculada!')
 
-# plate.calculate('J', J.materials_colormap)
+#plate.plot('V')
 
-# plate.calculate('dot_q', J.materials_colormap)
+plate.calculate('J')
 
-# # plate.plot('J')
+print('Densidade de corrente calculada!')
 
-# plate.plot('dot_q')
+#plate.plot('J')
 
-# plate.apply_liebmman_for('temperature', 1.75, 0.001)
+#print('Densidade de corrente plotada!')
 
-# plate.plot('temperature')
+plate.calculate('dot_q')
+
+print('Calor distribuído calculado!')
+
+#plate.plot('dot_q')
+
+plate.apply_liebmann_for('T', 1.75, 0.001)
+
+print('Temperatura calculada!')
+
+plate.plot('T')

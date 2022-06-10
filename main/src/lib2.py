@@ -119,73 +119,75 @@ class Plate:
     def _plot_V(self):
         title = "Distribuição de Tensão Elétrica"
         zlabel = "Tensão (V)"
-        color = ""
 
         fig = go.Figure(data = [go.Surface(
             x = self.x_grid,
             y = self.y_grid,
-            z = self.get_prop('V')
+            z = self.get_prop('V'),
+            colorscale = 'Viridis',
         )])
-        return fig, title, zlabel, color
+        return fig, title, zlabel
 
     def _plot_J(self):
         title = "Distribuição de Densidade de Corrente (A)"
         zlabel = ""
-        color = ""
 
         fig = ff.create_quiver(
             self.x_grid,
             self.y_grid,
             self.get_prop('Jr'),
             self.get_prop('Jphi'),
-            scale=1e-6,
-            name='quiver',
-            line_width=1
+            scale = 1e-1,
+            name = 'quiver',
+            line_width = 2,
+            line_color = '#32A834'
         )
-        return fig, title, zlabel, color
+        return fig, title, zlabel
 
     def _plot_q_dot(self):
         title = "Distribuição do Calor Gerado"
         zlabel = "Calor (W/m²)"
-        color = ""
 
         fig = go.Figure(data = [go.Surface(
             x = self.x_grid,
             y = self.y_grid,
-            z = self.get_prop('q_dot')
+            z = self.get_prop('dot_q'),
+            colorscale = 'Plotly3'
         )])
-        return fig, title, zlabel, color
+        return fig, title, zlabel
 
     def _plot_T(self):
         title = "Distribuição de Temperatura"
         zlabel = "Temperatura (K)"
-        color = ""
 
         fig = go.Figure(data = [go.Surface(
             x = self.x_grid,
             y = self.y_grid,
-            z = self.get_prop('V')
+            z = self.get_prop('V'),
+            colorscale = 'Turbo'
         )])
-        return fig, title, zlabel, color
+        return fig, title, zlabel
 
     def plot(self, which):
         map_plots = {
             'V'     : lambda: self._plot_V(),
             'J'     : lambda: self._plot_J(),
-            'q_dot' : lambda: self._plot_q_dot(),
+            'dot_q' : lambda: self._plot_q_dot(),
             'T'     : lambda: self._plot_T(),
         }
 
         if which not in map_plots:
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
-        fig, title, zlabel, color = map_plots[which]()
+        fig, title, zlabel = map_plots[which]()
         fig.update_layout(
             title = title,
-            xaxis_title = "x (m)",
-            yaxis_title = "y (m)",
-            zaxis_title = zlabel,
-            showlegend = False
+            showlegend = False,
+            scene = dict(
+                xaxis = dict(title="x (m)"),
+                yaxis = dict(title="y (m)"),
+                zaxis = dict(title=zlabel),
+            )
         )
         fig.show()
 
@@ -240,7 +242,7 @@ class Plate:
 
         if prop not in map_calcs:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
-        return map_calcs[prop]
+        return map_calcs[prop]()
 
     def _calculate_Jr(self):
         for i in range(self.n_i):
@@ -256,7 +258,7 @@ class Plate:
 
                 self.meshgrid[i, j].set(
                     'Jr',
-                    self.meshgrid[i, j].update('Jr', neighbours_vals)
+                    self.meshgrid[i, j].update_and_get('Jr', neighbours_vals)
                 )
         return
 
@@ -278,7 +280,7 @@ class Plate:
 
                 self.meshgrid[i, j].set(
                     'Jphi',
-                    self.meshgrid[i, j].update('Jphi', neighbours_vals)
+                    self.meshgrid[i, j].update_and_get('Jphi', neighbours_vals)
                 )
         return
 
@@ -302,15 +304,15 @@ class Point:
 
     def get(self, prop):
         map_props = {
-            'V'    : self.V['value'],
-            'Jr'   : self.J[0]['value'],
-            'Jphi' : self.J[1]['value'],
-            'T'    : self.T['value']
+            'V'    : lambda: self.V['value'],
+            'Jr'   : lambda: self.J[0]['value'],
+            'Jphi' : lambda: self.J[1]['value'],
+            'T'    : lambda: self.T['value']
         }
 
         if prop not in map_props:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
-        return map_props[prop]
+        return map_props[prop]()
 
     def set(self, prop, value):
         if prop == 'V':
