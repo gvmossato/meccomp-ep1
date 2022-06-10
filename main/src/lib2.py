@@ -8,6 +8,7 @@ class Plate:
         self.V_params = params['V']
         self.J_params = params['J']
         self.T_params = params['T']
+        self.Q_params = params['Q']
         self.M_params = params['M']
 
         self.h_r, self.h_phi, self.r_vals, self.phi_vals = self._gen_ranges(r_range, phi_range)
@@ -20,6 +21,8 @@ class Plate:
             'V'    : self.V_params,
             'Jr'   : self.J_params[0],
             'Jphi' : self.J_params[1],
+            'Qr'   : self.Q_params[0],
+            'Qphi' : self.Q_params[1],
         })
 
     def _set_plate_props(self, props):
@@ -95,16 +98,20 @@ class Plate:
                 )
         return
 
-    def get_prop(self, prop):
+    def get_prop_matrix(self, prop):
         map_props = {
             'M_color'    : lambda p: p.M['color'],
             'V_color'    : lambda p: p.V['color'],
             'Jr_color'   : lambda p: p.J[0]['color'],
             'Jphi_color' : lambda p: p.J[1]['color'],
+            'Qr_color'   : lambda p: p.Q[0]['color'],
+            'Qphi_color' : lambda p: p.Q[1]['color'],
             'V'          : lambda p: p.V['value'],
             'T'          : lambda p: p.T['value'],
             'Jr'         : lambda p: p.J[0]['value'],
             'Jphi'       : lambda p: p.J[1]['value'],
+            'Qr'         : lambda p: p.Q[0]['value'],
+            'Qphi'       : lambda p: p.Q[1]['value'],
             'dot_q'      : lambda p: p.dot_q
         }
 
@@ -123,7 +130,7 @@ class Plate:
         fig = go.Figure(data = [go.Surface(
             x = self.x_grid,
             y = self.y_grid,
-            z = self.get_prop('V'),
+            z = self.get_prop_matrix('V'),
             colorscale = 'Viridis',
         )])
         return fig, title, zlabel
@@ -135,8 +142,24 @@ class Plate:
         fig = ff.create_quiver(
             self.x_grid,
             self.y_grid,
-            self.get_prop('Jr'),
-            self.get_prop('Jphi'),
+            self.get_prop_matrix('Jr'),
+            self.get_prop_matrix('Jphi'),
+            scale = 1e-1,
+            name = 'quiver',
+            line_width = 2,
+            line_color = '#32A834'
+        )
+        return fig, title, zlabel
+
+    def _plot_Q(self):
+        title = "Distribuição deo Fluxo de Calor ()"
+        zlabel = ""
+
+        fig = ff.create_quiver(
+            self.x_grid,
+            self.y_grid,
+            self.get_prop_matrix('Qr'),
+            self.get_prop_matrix('Qphi'),
             scale = 1e-1,
             name = 'quiver',
             line_width = 2,
@@ -151,7 +174,7 @@ class Plate:
         fig = go.Figure(data = [go.Surface(
             x = self.x_grid,
             y = self.y_grid,
-            z = self.get_prop('dot_q'),
+            z = self.get_prop_matrix('dot_q'),
             colorscale = 'Plotly3'
         )])
         return fig, title, zlabel
@@ -163,7 +186,7 @@ class Plate:
         fig = go.Figure(data = [go.Surface(
             x = self.x_grid,
             y = self.y_grid,
-            z = self.get_prop('V'),
+            z = self.get_prop_matrix('V'),
             colorscale = 'Turbo'
         )])
         return fig, title, zlabel
@@ -172,6 +195,7 @@ class Plate:
         map_plots = {
             'V'     : lambda: self._plot_V(),
             'J'     : lambda: self._plot_J(),
+            'Q'     : lambda: self._plot_Q(),
             'dot_q' : lambda: self._plot_q_dot(),
             'T'     : lambda: self._plot_T(),
         }
@@ -192,7 +216,7 @@ class Plate:
         fig.show()
 
     def plot_meshgrid(self, which):
-        if which not in ['V', 'Jr', 'Jphi', 'M']:
+        if which not in ['V', 'Jr', 'Jphi', 'Qr', 'Qphi', 'M']:
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
         z_grid = np.zeros(self.x_grid.shape)
@@ -204,7 +228,7 @@ class Plate:
                 y = self.y_grid.ravel(),
                 z = z_grid.ravel(),
                 mode = 'markers',
-                marker = dict(color=self.get_prop(f'{which}_color').ravel(), size=4)
+                marker = dict(color=self.get_prop_matrix(f'{which}_color').ravel(), size=4)
             )
         )
 
@@ -236,15 +260,24 @@ class Plate:
 
     def calculate(self, prop):
         map_calcs = {
-            'J'     : lambda: [self._calculate_Jr(), self._calculate_Jphi()],
-            'dot_q' : lambda: self._calculate_dot_q()
+            'J' : lambda flux_var: [
+                self._calculate_flux_r('Jr', flux_var),
+                self._calculate_flux_phi('Jphi', flux_var)
+            ],
+            'Q' : lambda flux_var: [
+                self._calculate_flux_r('Qr', flux_var),
+                self._calculate_flux_phi('Qphi', flux_var)
+            ],
+            'dot_q' : lambda flux_var: self._calculate_dot_q()
         }
 
         if prop not in map_calcs:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
-        return map_calcs[prop]()
 
-    def _calculate_Jr(self):
+        flux_var = 'V' if prop == 'J' else 'T'
+        return map_calcs[prop](flux_var)
+
+    def _calculate_flux_r(self, prop, flux_var):
         for i in range(self.n_i):
             for j in range(self.n_j):
                 neighbours_vals = []
@@ -254,15 +287,15 @@ class Plate:
                     if col_idx <= -1 or col_idx >= self.n_j:
                         neighbours_vals.append(0)
                     else:
-                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get('V'))
+                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get(flux_var))
 
                 self.meshgrid[i, j].set(
-                    'Jr',
-                    self.meshgrid[i, j].update_and_get('Jr', neighbours_vals)
+                    prop,
+                    self.meshgrid[i, j].update_and_get(prop, neighbours_vals)
                 )
         return
 
-    def _calculate_Jphi(self):
+    def _calculate_flux_phi(self, prop, flux_var):
         for i in range(self.n_i):
             for j in range(self.n_j):
                 neighbours_vals = []
@@ -270,17 +303,17 @@ class Plate:
 
                 for row_idx, col_idx in neighbours_idxs:
                     if row_idx == -2:
-                        neighbours_vals.append(self.meshgrid[row_idx+4, col_idx].get('V'))
+                        neighbours_vals.append(self.meshgrid[row_idx+4, col_idx].get(flux_var))
                     elif row_idx == -1:
-                        neighbours_vals.append(self.meshgrid[row_idx+2, col_idx].get('V'))
+                        neighbours_vals.append(self.meshgrid[row_idx+2, col_idx].get(flux_var))
                     elif row_idx >= self.n_i:
                         neighbours_vals.append(0)
                     else:
-                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get('V'))
+                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get(flux_var))
 
                 self.meshgrid[i, j].set(
-                    'Jphi',
-                    self.meshgrid[i, j].update_and_get('Jphi', neighbours_vals)
+                    prop,
+                    self.meshgrid[i, j].update_and_get(prop, neighbours_vals)
                 )
         return
 
@@ -298,6 +331,7 @@ class Point:
 
         self.V = None
         self.J = [None, None]
+        self.Q = [None, None]
         self.T = None
 
         self.dot_q = np.nan
@@ -305,9 +339,11 @@ class Point:
     def get(self, prop):
         map_props = {
             'V'    : lambda: self.V['value'],
+            'T'    : lambda: self.T['value'],
             'Jr'   : lambda: self.J[0]['value'],
             'Jphi' : lambda: self.J[1]['value'],
-            'T'    : lambda: self.T['value']
+            'Qr'   : lambda: self.Q[0]['value'],
+            'Qphi' : lambda: self.Q[1]['value']
         }
 
         if prop not in map_props:
@@ -323,6 +359,10 @@ class Point:
             self.J[0]['value'] = value
         elif prop == 'Jphi':
             self.J[1]['value'] = value
+        elif prop == 'Qr':
+            self.Q[0]['value'] = value
+        elif prop == 'Qphi':
+            self.Q[1]['value'] = value
         else:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
         return
@@ -336,6 +376,10 @@ class Point:
             self.J[0] = value
         elif param == 'Jphi':
             self.J[1] = value
+        elif param == 'Qr':
+            self.Q[0] = value
+        elif param == 'Qphi':
+            self.Q[1] = value
         elif param == 'M':
             self.M = value
         else:
@@ -347,7 +391,9 @@ class Point:
             'V'    : lambda neigh: np.sum(self.V['coeffs'] * neigh),
             'T'    : lambda neigh: np.sum(self.T['coeffs'] * neigh),
             'Jr'   : lambda neigh: np.sum(self.J[0]['coeffs'] * neigh),
-            'Jphi' : lambda neigh: np.sum(self.J[1]['coeffs'] * neigh)
+            'Jphi' : lambda neigh: np.sum(self.J[1]['coeffs'] * neigh),
+            'Qr'   : lambda neigh: np.sum(self.J[0]['coeffs'] * neigh),
+            'Qphi' : lambda neigh: np.sum(self.J[1]['coeffs'] * neigh)
         }
 
         if prop not in map_props:
@@ -399,9 +445,9 @@ class Liebmann:
 
         while error >= self.epsilon:
             self.step_count += 1
-            before = self.plate.get_prop(prop)
+            before = self.plate.get_prop_matrix(prop)
             self._next_step(prop)
-            error = self._get_error(before, self.plate.get_prop(prop))
+            error = self._get_error(before, self.plate.get_prop_matrix(prop))
             print(f"Erro máximo: {error}                ", end='\r')
 
         print()

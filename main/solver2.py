@@ -3,6 +3,7 @@ import store.M_params as M
 import store.V_params as V
 import store.J_params as J
 import store.T_params as T
+import store.Q_params as Q
 
 from src.lib2 import Plate
 
@@ -47,6 +48,21 @@ current_density_params = (
     }
 )
 
+heat_flux_params = (
+    {
+        'regions' : Q.r_regions,
+        'coeffs'  : Q.r_coeffs,
+        'initial' : Q.r_initial,
+        'colors'  : Q.r_colors
+    },
+    {
+        'regions' : Q.phi_regions,
+        'coeffs'  : Q.phi_coeffs,
+        'initial' : Q.phi_initial,
+        'colors'  : Q.phi_colors
+    }
+)
+
 temperature_params = {
     'regions' : T.regions,
     'coeffs'  : T.coeffs,
@@ -58,6 +74,7 @@ params = {
     'V' : voltage_params,
     'J' : current_density_params,
     'T' : temperature_params,
+    'Q' : heat_flux_params,
     'M' : materials_params
 }
 
@@ -72,6 +89,10 @@ print('Meshgrid inicializada!')
 #plate.plot_meshgrid('Jr')
 
 #plate.plot_meshgrid('Jphi')
+
+plate.plot_meshgrid('Qr')
+
+plate.plot_meshgrid('Qphi')
 
 #print('Meshgrids plotadas!')
 
@@ -100,3 +121,7 @@ plate.apply_liebmann_for('T', 1.75, 0.001)
 print('Temperatura calculada!')
 
 plate.plot('T')
+
+plate.calculate('Q')
+
+plate.plot('Q')
