@@ -128,9 +128,9 @@ class Plate:
         zlabel = "Tensão (V)"
 
         fig = go.Figure(data = [go.Surface(
-            x = self.x_grid,
-            y = self.y_grid,
-            z = self.get_prop_matrix('V'),
+            x = self._mirror_plot(self.x_grid, False),
+            y = self._mirror_plot(self.y_grid, True),
+            z = self._mirror_plot(self.get_prop_matrix('V'), False),
             colorscale = 'Viridis',
         )])
         return fig, title, zlabel
@@ -140,10 +140,10 @@ class Plate:
         zlabel = ""
 
         fig = ff.create_quiver(
-            self.x_grid,
-            self.y_grid,
-            self.get_prop_matrix('Jr'),
-            self.get_prop_matrix('Jphi'),
+            self._mirror_plot(self.x_grid, False),
+            self._mirror_plot(self.y_grid, True),
+            self._mirror_plot(self.get_prop_matrix('Jr'), False),
+            self._mirror_plot(self.get_prop_matrix('Jphi'), True),
             scale = 1e-1,
             name = 'quiver',
             line_width = 2,
@@ -156,14 +156,14 @@ class Plate:
         zlabel = ""
 
         fig = ff.create_quiver(
-            self.x_grid,
-            self.y_grid,
-            self.get_prop_matrix('Qr'),
-            self.get_prop_matrix('Qphi'),
+            self._mirror_plot(self.x_grid, False),
+            self._mirror_plot(self.y_grid, True),
+            self._mirror_plot(self.get_prop_matrix('Qr'), False),
+            self._mirror_plot(self.get_prop_matrix('Qphi'), True),
             scale = 1e-1,
             name = 'quiver',
-            line_width = 2,
-            line_color = '#32A834'
+            line_width = 1,
+            line_color = '#FC035A'
         )
         return fig, title, zlabel
 
@@ -172,9 +172,9 @@ class Plate:
         zlabel = "Calor (W/m²)"
 
         fig = go.Figure(data = [go.Surface(
-            x = self.x_grid,
-            y = self.y_grid,
-            z = self.get_prop_matrix('dot_q'),
+            x = self._mirror_plot(self.x_grid, False),
+            y = self._mirror_plot(self.y_grid, True),
+            z = self._mirror_plot(self.get_prop_matrix('dot_q'), False),
             colorscale = 'Plotly3'
         )])
         return fig, title, zlabel
@@ -184,9 +184,9 @@ class Plate:
         zlabel = "Temperatura (K)"
 
         fig = go.Figure(data = [go.Surface(
-            x = self.x_grid,
-            y = self.y_grid,
-            z = self.get_prop_matrix('V'),
+            x = self._mirror_plot(self.x_grid, False),
+            y = self._mirror_plot(self.y_grid, True),
+            z = self._mirror_plot(self.get_prop_matrix('T'), False),
             colorscale = 'Turbo'
         )])
         return fig, title, zlabel
@@ -219,40 +219,52 @@ class Plate:
         if which not in ['V', 'Jr', 'Jphi', 'Qr', 'Qphi', 'M']:
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
-        z_grid = np.zeros(self.x_grid.shape)
+        mesh_x_grid = self._mirror_plot(self.x_grid, False)
+        mesh_y_grid = self._mirror_plot(self.y_grid, True)
+        mesh_z_grid = self._mirror_plot(np.zeros(self.x_grid.shape), False)
+        mesh_color  = self._mirror_plot(self.get_prop_matrix(f'{which}_color'), False)
 
         plot_data = []
         plot_data.append(
             go.Scatter3d(
-                x = self.x_grid.ravel(),
-                y = self.y_grid.ravel(),
-                z = z_grid.ravel(),
+                x = mesh_x_grid.ravel(),
+                y = mesh_y_grid.ravel(),
+                z = mesh_z_grid.ravel(),
                 mode = 'markers',
-                marker = dict(color=self.get_prop_matrix(f'{which}_color').ravel(), size=4)
+                showlegend=False,
+                marker = dict(color=mesh_color.ravel(), size=4)
             )
         )
 
         line_style = dict(color='#A3A3A3', width=2)
-        for i, j, k in zip(self.x_grid, self.y_grid, z_grid):
+        for i, j, k in zip(mesh_x_grid, mesh_y_grid, mesh_z_grid):
             plot_data.append(go.Scatter3d(
                 x = i,
                 y = j,
                 z = k,
                 mode = 'lines',
-                line = line_style
+                line = line_style,
+                hoverinfo = 'none',
+                showlegend=False,
             ))
-        for i, j, k in zip(self.x_grid.T, self.y_grid.T, z_grid.T):
+        for i, j, k in zip(mesh_x_grid.T, mesh_y_grid.T, mesh_z_grid.T):
             plot_data.append(go.Scatter3d(
                 x = i,
                 y = j,
                 z = k,
                 mode = 'lines',
-                line = line_style
+                line = line_style,
+                hoverinfo = 'none',
+                showlegend=False,
             ))
 
         fig = go.Figure(data = plot_data)
         fig.show()
         return
+
+    def _mirror_plot(self, grid, invert):
+        sign = -1 if invert else 1
+        return np.vstack([np.flip(sign*grid), np.flip(grid, axis=1)])
 
     def apply_liebmann_for(self, which, lamb, max_error):
         liebmann = Liebmann(self, lamb, max_error)

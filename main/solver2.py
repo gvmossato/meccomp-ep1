@@ -82,7 +82,7 @@ plate = Plate(r_range, phi_range, params, props)
 
 print('Meshgrid inicializada!')
 
-#plate.plot_meshgrid('M')
+# plate.plot_meshgrid('M')
 
 #plate.plot_meshgrid('V')
 
@@ -90,37 +90,37 @@ print('Meshgrid inicializada!')
 
 #plate.plot_meshgrid('Jphi')
 
-plate.plot_meshgrid('Qr')
+#plate.plot_meshgrid('Qr')
 
-plate.plot_meshgrid('Qphi')
+#plate.plot_meshgrid('Qphi')
 
-#print('Meshgrids plotadas!')
+# print('Meshgrids plotadas!')
 
 plate.apply_liebmann_for('V', 1.75, 0.001)
 
 print('Tensão calculada!')
 
-#plate.plot('V')
+# plate.plot('V')
 
 plate.calculate('J')
 
 print('Densidade de corrente calculada!')
 
-#plate.plot('J')
+# plate.plot('J')
 
-#print('Densidade de corrente plotada!')
+# print('Densidade de corrente plotada!')
 
 plate.calculate('dot_q')
 
 print('Calor distribuído calculado!')
 
-#plate.plot('dot_q')
+# plate.plot('dot_q')
 
 plate.apply_liebmann_for('T', 1.75, 0.001)
 
 print('Temperatura calculada!')
 
-plate.plot('T')
+# plate.plot('T')
 
 plate.calculate('Q')
 
