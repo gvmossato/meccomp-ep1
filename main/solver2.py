@@ -1,126 +1,140 @@
-import main.store.M_params as M
-import main.store.V_params as V
-import main.store.J_params as J
-import main.store.T_params as T
-import main.store.Q_params as Q
+import store.M_params as M
+import store.V_params as V
+import store.J_params as J
+import store.T_params as T
+import store.Q_params as Q
 
-from main.src.lib2 import Plate
+from src.lib2 import Plate
 
-def solve():
-    r_range = [0.03, 0.11, 0.001]
-    phi_range = [0.0, 40.0, 1.0]
 
-    props = {
-        'sa'   : 5e-6,
-        'sb'   : 1e-5,
-        'ka'   : 110.0,
-        'kb'   : 500.0,
-        'Tamb' : 298.0,
-        'h'    : 50.0
+r_range = [0.03, 0.11, 0.001]
+phi_range = [0.0, 40.0, 1.0]
+
+props = {
+    'sa'   : 5e-6,
+    'sb'   : 1e-5,
+    'ka'   : 110.0,
+    'kb'   : 500.0,
+    'Tamb' : 298.0,
+    'h'    : 50.0
+}
+
+materials_params = {
+    'regions' : M.regions,
+    'props'   : M.props,
+    'colors'  : M.colors
+}
+
+voltage_params = {
+    'regions' : V.regions,
+    'coeffs'  : V.coeffs,
+    'initial' : V.initial,
+    'colors'  : V.colors
+}
+
+current_density_params = (
+    {
+        'regions' : J.r_regions,
+        'coeffs'  : J.r_coeffs,
+        'initial' : J.r_initial,
+        'colors'  : J.r_colors
+    },
+    {
+        'regions' : J.phi_regions,
+        'coeffs'  : J.phi_coeffs,
+        'initial' : J.phi_initial,
+        'colors'  : J.phi_colors
     }
+)
 
-    materials_params = {
-        'regions' : M.regions,
-        'props'   : M.props,
-        'colors'  : M.colors
+heat_flux_params = (
+    {
+        'regions' : Q.r_regions,
+        'coeffs'  : Q.r_coeffs,
+        'initial' : Q.r_initial,
+        'colors'  : Q.r_colors
+    },
+    {
+        'regions' : Q.phi_regions,
+        'coeffs'  : Q.phi_coeffs,
+        'initial' : Q.phi_initial,
+        'colors'  : Q.phi_colors
     }
+)
 
-    voltage_params = {
-        'regions' : V.regions,
-        'coeffs'  : V.coeffs,
-        'initial' : V.initial,
-        'colors'  : V.colors
-    }
+temperature_params = {
+    'regions' : T.regions,
+    'coeffs'  : T.coeffs,
+    'initial' : T.initial,
+    'colors'  : T.colors
+}
 
-    current_density_params = (
-        {
-            'regions' : J.r_regions,
-            'coeffs'  : J.r_coeffs,
-            'initial' : J.r_initial,
-            'colors'  : J.r_colors
-        },
-        {
-            'regions' : J.phi_regions,
-            'coeffs'  : J.phi_coeffs,
-            'initial' : J.phi_initial,
-            'colors'  : J.phi_colors
-        }
-    )
+params = {
+    'V' : voltage_params,
+    'J' : current_density_params,
+    'T' : temperature_params,
+    'Q' : heat_flux_params,
+    'M' : materials_params
+}
 
-    heat_flux_params = (
-        {
-            'regions' : Q.r_regions,
-            'coeffs'  : Q.r_coeffs,
-            'initial' : Q.r_initial,
-            'colors'  : Q.r_colors
-        },
-        {
-            'regions' : Q.phi_regions,
-            'coeffs'  : Q.phi_coeffs,
-            'initial' : Q.phi_initial,
-            'colors'  : Q.phi_colors
-        }
-    )
+plate = Plate(r_range, phi_range, params, props)
 
-    temperature_params = {
-        'regions' : T.regions,
-        'coeffs'  : T.coeffs,
-        'initial' : T.initial,
-        'colors'  : T.colors
-    }
+print('Meshgrid inicializada!')
 
-    params = {
-        'V' : voltage_params,
-        'J' : current_density_params,
-        'T' : temperature_params,
-        'Q' : heat_flux_params,
-        'M' : materials_params
-    }
+# plate.plot_meshgrid('M')
 
-    plate = Plate(r_range, phi_range, params, props)
+# plate.plot_meshgrid('V')
 
-    print('Meshgrid inicializada!')
+# plate.plot_meshgrid('Jr')
 
-    plate.plot_meshgrid('M')
+# plate.plot_meshgrid('Jphi')
 
-    plate.plot_meshgrid('V')
+# plate.plot_meshgrid('Qr')
 
-    plate.plot_meshgrid('Jr')
+# plate.plot_meshgrid('Qphi')
 
-    plate.plot_meshgrid('Jphi')
+# print('Meshgrids plotadas!')
 
-    plate.plot_meshgrid('Qr')
+plate.apply_liebmann_for('V', 1.75, 0.001)
 
-    plate.plot_meshgrid('Qphi')
+print('Tensão calculada!')
 
-    print('Meshgrids plotadas!')
+plate.plot('V')
 
-    plate.apply_liebmann_for('V', 1.75, 0.001)
+plate.calculate_flux('J')
 
-    print('Tensão calculada!')
+print('Densidade de corrente calculada!')
 
-    plate.plot('V')
+# plate.plot('J')
 
-    plate.calculate('J')
+# print('Densidade de corrente plotada!')
 
-    print('Densidade de corrente calculada!')
+plate.calculate('i')
 
-    plate.plot('J')
+print(f'Corrente: {plate.i*1000} mA')
 
-    print('Densidade de corrente plotada!')
+plate.calculate('R')
 
-    plate.calculate('dot_q')
+print(f'Resistência: {plate.R/1000} kΩ')
 
-    print('Calor distribuído calculado!')
+plate.calculate('dot_q')
 
-    plate.plot('dot_q')
+print('Calor distribuído calculado!')
 
-    plate.apply_liebmann_for('T', 1.75, 0.001)
+# plate.plot('dot_q')
 
-    print('Temperatura calculada!')
+plate.apply_liebmann_for('T', 1.75, 0.001)
 
-    plate.plot('T')
+print('Temperatura calculada!')
 
-    plate.calculate('Q')
+plate.plot('T')
 
-    plate.plot('Q')
+plate.calculate_flux('Q')
+
+print('Fluxo de calor calculado')
+
+# plate.plot('Q')
+
+plate.calculate('q_conv')
+
+print(f'Perda de calor por convecção: {plate.q_conv} W/m²')

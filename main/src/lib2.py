@@ -11,6 +11,10 @@ class Plate:
         self.Q_params = params['Q']
         self.M_params = params['M']
 
+        self.i = np.nan
+        self.R = np.nan
+        self.q_conv = np.nan
+
         self.h_r, self.h_phi, self.r_vals, self.phi_vals = self._gen_ranges(r_range, phi_range)
         self.n_i, self.n_j = len(self.phi_vals), len(self.r_vals)
         self.x_grid, self.y_grid, self.meshgrid = self._gen_grids()
@@ -272,15 +276,43 @@ class Plate:
 
     def calculate(self, prop):
         map_calcs = {
+            'dot_q'  : lambda: self._calculate_dot_q(),
+            'q_conv' : lambda: self._calculate_through_wall('Qr'),
+            'i'      : lambda: self._calculate_through_wall('Jr'),
+            'R'      : lambda: self._calculate_R()
+        }
+
+        if prop not in map_calcs:
+            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+        return map_calcs[prop]()
+
+    def _calculate_through_wall(self, prop):
+        max_r_prop_vals = self.get_prop_matrix(prop)[:, -1].ravel()
+
+        calc = 0
+        for i in range(len(max_r_prop_vals)-1):
+            calc += (max_r_prop_vals[i] + max_r_prop_vals[i+1]) * self.h_phi / 2
+
+        if prop == 'Jr':
+            self.i = 2 * self.r_vals[-1] * calc
+        else:
+            self.q_conv = 2 * self.r_vals[-1] * calc
+        return self.i
+
+    def _calculate_R(self):
+        self.R = 100 / self.i
+        return self.R
+
+    def calculate_flux(self, prop):
+        map_calcs = {
             'J' : lambda flux_var: [
-                self._calculate_flux_r('Jr', flux_var),
-                self._calculate_flux_phi('Jphi', flux_var)
+                self._calculate_flux_r('Jr', 'V'),
+                self._calculate_flux_phi('Jphi', 'V')
             ],
             'Q' : lambda flux_var: [
-                self._calculate_flux_r('Qr', flux_var),
-                self._calculate_flux_phi('Qphi', flux_var)
+                self._calculate_flux_r('Qr', 'T'),
+                self._calculate_flux_phi('Qphi', 'T')
             ],
-            'dot_q' : lambda flux_var: self._calculate_dot_q()
         }
 
         if prop not in map_calcs:
