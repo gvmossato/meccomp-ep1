@@ -23,6 +23,7 @@ class Plate:
         self._points_add_params({
             'M'    : self.M_params,
             'V'    : self.V_params,
+            'T'    : self.T_params,
             'Jr'   : self.J_params[0],
             'Jphi' : self.J_params[1],
             'Qr'   : self.Q_params[0],
@@ -106,6 +107,7 @@ class Plate:
         map_props = {
             'M_color'    : lambda p: p.M['color'],
             'V_color'    : lambda p: p.V['color'],
+            'T_color'    : lambda p: p.T['color'],
             'Jr_color'   : lambda p: p.J[0]['color'],
             'Jphi_color' : lambda p: p.J[1]['color'],
             'Qr_color'   : lambda p: p.Q[0]['color'],
@@ -220,7 +222,7 @@ class Plate:
         fig.show()
 
     def plot_meshgrid(self, which):
-        if which not in ['V', 'Jr', 'Jphi', 'Qr', 'Qphi', 'M']:
+        if which not in ['V', 'T', 'Jr', 'Jphi', 'Qr', 'Qphi', 'M']:
             raise ValueError(f"Unexpected value '{which}' passed to `which`")
 
         mesh_x_grid = self._mirror_plot(self.x_grid, False)
@@ -305,11 +307,11 @@ class Plate:
 
     def calculate_flux(self, prop):
         map_calcs = {
-            'J' : lambda flux_var: [
+            'J' : lambda: [
                 self._calculate_flux_r('Jr', 'V'),
                 self._calculate_flux_phi('Jphi', 'V')
             ],
-            'Q' : lambda flux_var: [
+            'Q' : lambda: [
                 self._calculate_flux_r('Qr', 'T'),
                 self._calculate_flux_phi('Qphi', 'T')
             ],
@@ -317,9 +319,7 @@ class Plate:
 
         if prop not in map_calcs:
             raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
-
-        flux_var = 'V' if prop == 'J' else 'T'
-        return map_calcs[prop](flux_var)
+        return map_calcs[prop]()
 
     def _calculate_flux_r(self, prop, flux_var):
         for i in range(self.n_i):

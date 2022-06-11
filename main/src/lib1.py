@@ -18,7 +18,7 @@ def RK4(F: list, t0: float, Y0: list, h: float, tf: float) -> tuple:
         tuple: respectivamente, o vetor de tempos e os históricos
         de valores de Y e K
     """
-    Y_hist = []
+    Y_hist  = []
     K1_hist = []
 
     Y = np.copy(Y0)
