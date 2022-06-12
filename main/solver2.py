@@ -88,7 +88,7 @@ def solve(item):
     input(f"\nPressione {ctext('ENTER', 'g')} para continuar")
 
     print('\033[F', end='')
-    print('Calculando e plotando a calor distribuído...')
+    print('Calculando e plotando a fonte de calor distribuído...')
     plate.calculate('dot_q')
     plate.plot('dot_q')
 
@@ -111,5 +111,5 @@ def solve(item):
     print('\033[F', end='')
     plate.calculate('q_conv')
     print('Propriedade encontrada:')
-    print(f"{ctext('Perda de calor por convecção:', 'b')} {np.round(plate.q_conv, 4)} W/m²")
+    print(f"{ctext('Perda de calor por convecção:', 'b')} {plate.q_conv*1000:.4} mW/m²")
     return
