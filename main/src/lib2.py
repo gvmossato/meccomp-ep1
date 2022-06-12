@@ -38,7 +38,7 @@ class Plate:
         for prop, value in props.items():
             exec(f"self.{prop} = {value}")
 
-    def _validate_step(self, h: float, contour_gcd: float):
+    def _validate_step(self, h, contour_gcd):
         return contour_gcd / np.round(contour_gcd / h)
 
     def _gen_ranges(self, r_range, phi_range):
@@ -51,6 +51,9 @@ class Plate:
         r_vals = np.arange(r_start, r_stop+h_r, h_r)
         phi_vals = np.deg2rad(np.arange(phi_start, phi_stop+h_phi, h_phi))
         return h_r, np.deg2rad(h_phi), r_vals, phi_vals
+
+    def _get_base_matrix(self, element):
+        return np.array([[element] * self.n_j] * self.n_i)
 
     def _get_point_params(self, point, params, is_material=False):
         for i in range(len(params['regions'])):
@@ -79,9 +82,6 @@ class Plate:
                     }
                 return point_params
         raise ValueError(f'Unable to assign params for {(point.r, point.phi)}')
-
-    def _get_base_matrix(self, element):
-        return np.array([[element] * self.n_j] * self.n_i)
 
     def _gen_grids(self):
         r_grid, phi_grid = np.meshgrid(self.r_vals, self.phi_vals)
@@ -132,6 +132,102 @@ class Plate:
         for point in self.meshgrid.ravel():
             prop_matrix[point.i, point.j] = map_props[prop](point)
         return prop_matrix
+
+    def _calculate_through_wall(self, prop):
+        max_r_prop_vals = self.get_prop_matrix(prop)[:, -1].ravel()
+
+        calc = 0
+        for i in range(len(max_r_prop_vals)-1):
+            calc += (max_r_prop_vals[i] + max_r_prop_vals[i+1]) * self.h_phi / 2
+
+        if prop == 'Jr':
+            self.i = 2 * self.r_vals[-1] * calc
+        else:
+            self.q_conv = 2 * self.r_vals[-1] * calc
+        return self.i
+
+    def _calculate_R(self):
+        self.R = 100 / self.i
+        return self.R
+
+    def calculate_flux(self, prop):
+        map_calcs = {
+            'J' : lambda: [
+                self._calculate_flux_r('Jr', 'V'),
+                self._calculate_flux_phi('Jphi', 'V')
+            ],
+            'Q' : lambda: [
+                self._calculate_flux_r('Qr', 'T'),
+                self._calculate_flux_phi('Qphi', 'T')
+            ],
+        }
+
+        if prop not in map_calcs:
+            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+        return map_calcs[prop]()
+
+    def _calculate_flux_r(self, prop, flux_var):
+        for i in range(self.n_i):
+            for j in range(self.n_j):
+                neighbours_vals = []
+                neighbours_idxs = [(i, j-2), (i, j-1), (i, j), (i, j+1), (i, j+2)]
+
+                for row_idx, col_idx in neighbours_idxs:
+                    if col_idx <= -1 or col_idx >= self.n_j:
+                        neighbours_vals.append(0)
+                    else:
+                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get(flux_var))
+
+                self.meshgrid[i, j].set(
+                    prop,
+                    self.meshgrid[i, j].update_and_get(prop, neighbours_vals)
+                )
+        return
+
+    def _calculate_flux_phi(self, prop, flux_var):
+        for i in range(self.n_i):
+            for j in range(self.n_j):
+                neighbours_vals = []
+                neighbours_idxs = [(i+2, j), (i+1, j), (i, j), (i-1, j), (i-2, j)]
+
+                for row_idx, col_idx in neighbours_idxs:
+                    if row_idx == -2:
+                        neighbours_vals.append(self.meshgrid[row_idx+4, col_idx].get(flux_var))
+                    elif row_idx == -1:
+                        neighbours_vals.append(self.meshgrid[row_idx+2, col_idx].get(flux_var))
+                    elif row_idx >= self.n_i:
+                        neighbours_vals.append(0)
+                    else:
+                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get(flux_var))
+
+                self.meshgrid[i, j].set(
+                    prop,
+                    self.meshgrid[i, j].update_and_get(prop, neighbours_vals)
+                )
+        return
+
+    def _calculate_dot_q(self):
+        for point in self.meshgrid.ravel():
+            point.dot_q = -(point.get('Jr')**2 + point.get('Jphi')**2) / point.M['props']['sigma']
+
+        self._points_add_params({'T' : self.T_params})
+        return
+
+    def calculate(self, prop):
+        map_calcs = {
+            'dot_q'  : lambda: self._calculate_dot_q(),
+            'q_conv' : lambda: self._calculate_through_wall('Qr'),
+            'i'      : lambda: self._calculate_through_wall('Jr'),
+            'R'      : lambda: self._calculate_R()
+        }
+
+        if prop not in map_calcs:
+            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
+        return map_calcs[prop]()
+
+    def _mirror_plot(self, grid, invert):
+        sign = -1 if invert else 1
+        return np.vstack([np.flip(sign*grid), np.flip(grid[1:], axis=1)])
 
     def _plot_V(self):
         title = "Distribuição de Tensão Elétrica"
@@ -272,105 +368,10 @@ class Plate:
         fig.show()
         return
 
-    def _mirror_plot(self, grid, invert):
-        sign = -1 if invert else 1
-        return np.vstack([np.flip(sign*grid), np.flip(grid[1:], axis=1)])
-
     def apply_liebmann_for(self, which, lamb, max_error):
         liebmann = Liebmann(self, lamb, max_error)
         self.meshgrid = liebmann.solve_for(which)
 
-    def calculate(self, prop):
-        map_calcs = {
-            'dot_q'  : lambda: self._calculate_dot_q(),
-            'q_conv' : lambda: self._calculate_through_wall('Qr'),
-            'i'      : lambda: self._calculate_through_wall('Jr'),
-            'R'      : lambda: self._calculate_R()
-        }
-
-        if prop not in map_calcs:
-            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
-        return map_calcs[prop]()
-
-    def _calculate_through_wall(self, prop):
-        max_r_prop_vals = self.get_prop_matrix(prop)[:, -1].ravel()
-
-        calc = 0
-        for i in range(len(max_r_prop_vals)-1):
-            calc += (max_r_prop_vals[i] + max_r_prop_vals[i+1]) * self.h_phi / 2
-
-        if prop == 'Jr':
-            self.i = 2 * self.r_vals[-1] * calc
-        else:
-            self.q_conv = 2 * self.r_vals[-1] * calc
-        return self.i
-
-    def _calculate_R(self):
-        self.R = 100 / self.i
-        return self.R
-
-    def calculate_flux(self, prop):
-        map_calcs = {
-            'J' : lambda: [
-                self._calculate_flux_r('Jr', 'V'),
-                self._calculate_flux_phi('Jphi', 'V')
-            ],
-            'Q' : lambda: [
-                self._calculate_flux_r('Qr', 'T'),
-                self._calculate_flux_phi('Qphi', 'T')
-            ],
-        }
-
-        if prop not in map_calcs:
-            raise ValueError(f"Unexpected value '{prop}' passed to `prop`")
-        return map_calcs[prop]()
-
-    def _calculate_flux_r(self, prop, flux_var):
-        for i in range(self.n_i):
-            for j in range(self.n_j):
-                neighbours_vals = []
-                neighbours_idxs = [(i, j-2), (i, j-1), (i, j), (i, j+1), (i, j+2)]
-
-                for row_idx, col_idx in neighbours_idxs:
-                    if col_idx <= -1 or col_idx >= self.n_j:
-                        neighbours_vals.append(0)
-                    else:
-                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get(flux_var))
-
-                self.meshgrid[i, j].set(
-                    prop,
-                    self.meshgrid[i, j].update_and_get(prop, neighbours_vals)
-                )
-        return
-
-    def _calculate_flux_phi(self, prop, flux_var):
-        for i in range(self.n_i):
-            for j in range(self.n_j):
-                neighbours_vals = []
-                neighbours_idxs = [(i+2, j), (i+1, j), (i, j), (i-1, j), (i-2, j)]
-
-                for row_idx, col_idx in neighbours_idxs:
-                    if row_idx == -2:
-                        neighbours_vals.append(self.meshgrid[row_idx+4, col_idx].get(flux_var))
-                    elif row_idx == -1:
-                        neighbours_vals.append(self.meshgrid[row_idx+2, col_idx].get(flux_var))
-                    elif row_idx >= self.n_i:
-                        neighbours_vals.append(0)
-                    else:
-                        neighbours_vals.append(self.meshgrid[row_idx, col_idx].get(flux_var))
-
-                self.meshgrid[i, j].set(
-                    prop,
-                    self.meshgrid[i, j].update_and_get(prop, neighbours_vals)
-                )
-        return
-
-    def _calculate_dot_q(self):
-        for point in self.meshgrid.ravel():
-            point.dot_q = -(point.get('Jr')**2 + point.get('Jphi')**2) / point.M['props']['sigma']
-
-        self._points_add_params({'T' : self.T_params})
-        return
 
 class Point:
     def __init__(self, index, cordinates):
@@ -459,6 +460,9 @@ class Liebmann:
     def _SOR(self, V_new, V_curr):
         return self.lamb * V_new + (1-self.lamb) * V_curr
 
+    def _get_error(self, old, curr):
+        return np.max(np.abs(curr - old) / (curr + np.finfo(float).tiny))
+
     def _next_step(self, prop):
         meshgrid = self.plate.meshgrid
 
@@ -484,9 +488,6 @@ class Liebmann:
                 prop_new_val = self._SOR(prop_updated_val, meshgrid[i, j].get(prop))
                 meshgrid[i, j].set(prop, prop_new_val)
         return
-
-    def _get_error(self, old, curr):
-        return np.max(np.abs(curr - old) / (curr + np.finfo(float).tiny))
 
     def solve_for(self, prop):
         error = np.inf
