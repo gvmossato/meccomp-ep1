@@ -1,3 +1,7 @@
+# ========================= #
+# Parâmetros de temperatura #
+# ========================= #
+
 import numpy as np
 
 

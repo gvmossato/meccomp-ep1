@@ -1,3 +1,7 @@
+# ============================ #
+# Parâmetros de fluxo de calor #
+# ============================ #
+
 import numpy as np
 
 # ==== #

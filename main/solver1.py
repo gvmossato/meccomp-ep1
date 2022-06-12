@@ -1,3 +1,7 @@
+# ============================== #
+# Script para solução da Parte 1 #
+# ============================== #
+
 import numpy as np
 
 from main.src.lib1 import RK4, scale_plot

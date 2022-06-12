@@ -1,3 +1,7 @@
+# =================================== #
+# Consolidação de todos os parâmetros #
+# =================================== #
+
 import main.store.M_params as M
 import main.store.V_params as V
 import main.store.J_params as J

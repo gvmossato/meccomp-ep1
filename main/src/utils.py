@@ -1,3 +1,7 @@
+# ========================= #
+# Funções de suporte gerais #
+# ========================= #
+
 def validate_input(text: str, valid_inputs: list, default: str = '') -> str:
     """
     Adicona lógica de validação de entrada e valor de entrada padrão

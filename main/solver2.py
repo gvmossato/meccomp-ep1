@@ -1,4 +1,6 @@
-import numpy as np
+# ============================== #
+# Script para solução da Parte 2 #
+# ============================== #
 
 from main.src.utils import ctext, validate_input
 from main.src.params import params

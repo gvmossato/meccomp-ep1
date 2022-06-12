@@ -1,3 +1,7 @@
+# ============================= #
+# Funções de suporte da Parte 1 #
+# ============================= #
+
 import numpy as np
 import plotly.graph_objs as go
 

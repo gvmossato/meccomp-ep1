@@ -1,3 +1,7 @@
+# ==================== #
+# Parâmetros de tensão #
+# ==================== #
+
 import numpy as np
 
 

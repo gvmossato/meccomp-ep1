@@ -1,3 +1,7 @@
+# ================================== #
+# Intermédio entre scripts e usuário #
+# ================================== #
+
 import main.solver1 as part1
 import main.solver2 as part2
 

@@ -1,5 +1,10 @@
+# ================== #
+# Script de execução #
+# ================== #
+
 import main.src.interface as interface
 from main.src.utils import ctext
+
 
 print(ctext(
 f"""

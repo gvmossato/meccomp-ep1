@@ -1,3 +1,7 @@
+# =================================== #
+# Parâmetros de densidade de corrente #
+# =================================== #
+
 import numpy as np
 
 # ==== #
